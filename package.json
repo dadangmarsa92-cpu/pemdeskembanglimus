@@ -1,0 +1,15 @@
+{
+  "name": "pemdes-login",
+  "version": "1.0.0",
+  "description": "Sistem Login Pelayanan Pemerintah Desa",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "sql.js": "^1.11.0",
+    "express-session": "^1.18.1"
+  }
+}

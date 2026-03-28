@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Sistem Login Pelayanan Pemerintah Desa - Portal Digital Layanan Masyarakat">
+  <title>Login - Pelayanan Pemerintah Desa</title>
+  <link rel="icon" href="assets/logo.png" type="image/png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Animated Background -->
+  <div class="bg-animated"></div>
+
+  <!-- Floating Particles -->
+  <div class="particles">
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Login Card -->
+  <div class="login-wrapper">
+    <div class="login-card">
+
+      <!-- Logo -->
+      <div class="login-logo">
+        <img src="assets/logo.png" alt="Logo Pelayanan Pemerintah Desa" id="loginLogo">
+      </div>
+
+      <!-- Header -->
+      <div class="login-header">
+        <span class="subtitle">Sistem Informasi</span>
+        <h1>Pelayanan <span>Pemerintah Desa</span></h1>
+        <div class="divider"></div>
+      </div>
+
+      <!-- Login Form -->
+      <form id="loginForm" autocomplete="off">
+
+        <!-- Username -->
+        <div class="form-group">
+          <label for="username">Username</label>
+          <div class="input-wrapper">
+            <input
+              type="text"
+              id="username"
+              class="form-input"
+              placeholder="Masukkan username"
+              required
+              autocomplete="username"
+            >
+            <span class="input-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+            </span>
+          </div>
+        </div>
+
+        <!-- Password -->
+        <div class="form-group">
+          <label for="password">Password</label>
+          <div class="input-wrapper">
+            <input
+              type="password"
+              id="password"
+              class="form-input"
+              placeholder="Masukkan password"
+              required
+              autocomplete="current-password"
+              style="padding-right: 48px;"
+            >
+            <span class="input-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+            </span>
+            <!-- Password Toggle (Eye Icon) -->
+            <button type="button" class="password-toggle" id="passwordToggle" aria-label="Toggle password visibility">
+              <!-- Eye Open -->
+              <svg id="eyeOpen" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              <!-- Eye Closed (hidden by default) -->
+              <svg id="eyeClosed" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                <line x1="1" y1="1" x2="23" y2="23"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Role / Hak Akses -->
+        <div class="form-group">
+          <label for="role">Hak Akses</label>
+          <div class="input-wrapper">
+            <select id="role" class="form-select" required>
+              <option value="" disabled selected>Pilih hak akses</option>
+              <option value="SuperUser">🛡️ SuperUser</option>
+              <option value="User">👤 User</option>
+            </select>
+            <span class="input-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              </svg>
+            </span>
+          </div>
+        </div>
+
+        <!-- Login Button -->
+        <button type="submit" class="btn-login" id="btnLogin">
+          <span class="btn-spinner"></span>
+          <span class="btn-text">Masuk</span>
+        </button>
+
+      </form>
+
+      <!-- Footer -->
+      <div class="login-footer">
+        &copy; 2026 Pelayanan Pemerintah Desa &middot; Sistem Informasi Digital
+      </div>
+
+    </div>
+  </div>
+
+  <script src="js/login.js"></script>
+</body>
+</html>

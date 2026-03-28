@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Dashboard Pelayanan Pemerintah Desa">
+  <title>Dashboard - Pelayanan Pemerintah Desa</title>
+  <link rel="icon" href="assets/logo.png" type="image/png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Animated Background -->
+  <div class="bg-animated"></div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <div class="dashboard-wrapper">
+
+    <!-- Top Navigation -->
+    <nav class="top-nav">
+      <div class="nav-brand">
+        <img src="assets/logo.png" alt="Logo">
+        <h2>Pelayanan <span>Pemdes</span></h2>
+      </div>
+      <div class="nav-user">
+        <div class="nav-user-info">
+          <div class="user-name" id="navUsername">-</div>
+          <div class="user-role" id="navRole">-</div>
+        </div>
+        <div class="user-avatar" id="userAvatar">?</div>
+        <button class="btn-logout" id="btnLogout">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;vertical-align:middle;">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+          Logout
+        </button>
+      </div>
+    </nav>
+
+    <!-- Dashboard Content -->
+    <div class="dashboard-content">
+
+      <!-- Welcome Section -->
+      <div class="welcome-section">
+        <h1>Selamat Datang, <span id="welcomeName">User</span>! 👋</h1>
+        <p id="welcomeDesc">Anda login sebagai pengguna sistem pelayanan desa.</p>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon blue">📋</div>
+          <div class="stat-value">128</div>
+          <div class="stat-label">Total Layanan</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon teal">👥</div>
+          <div class="stat-value" id="statUsers">-</div>
+          <div class="stat-label">Pengguna Terdaftar</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon green">✅</div>
+          <div class="stat-value">96</div>
+          <div class="stat-label">Layanan Selesai</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon orange">⏳</div>
+          <div class="stat-value">32</div>
+          <div class="stat-label">Dalam Proses</div>
+        </div>
+      </div>
+
+      <!-- Users Table (SuperUser Only) -->
+      <div class="table-section" id="usersTableSection" style="display:none;">
+        <h2>📊 Daftar Pengguna Sistem</h2>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Username</th>
+              <th>Hak Akses</th>
+              <th>Tanggal Dibuat</th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody">
+            <!-- Filled by JS -->
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="js/dashboard.js"></script>
+</body>
+</html>
