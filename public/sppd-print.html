@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cetak SPPD - Pelayanan Pemerintah Desa</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Times+New+Roman&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    @page {
+      size: A4;
+      margin: 1.5cm 2cm;
+    }
+
+    body {
+      font-family: 'Times New Roman', Times, serif;
+      font-size: 12pt;
+      color: #000;
+      background: #fff;
+      line-height: 1.5;
+    }
+
+    .print-container {
+      max-width: 210mm;
+      margin: 0 auto;
+      padding: 20px 40px;
+    }
+
+    /* Header */
+    .print-header {
+      text-align: center;
+      border-bottom: 3px double #000;
+      padding-bottom: 12px;
+      margin-bottom: 20px;
+      position: relative;
+    }
+
+    .print-header img {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 80px;
+      height: 80px;
+      object-fit: contain;
+    }
+
+    .print-header h1 {
+      font-size: 14pt;
+      font-weight: bold;
+      letter-spacing: 2px;
+      margin-bottom: 0;
+    }
+
+    .print-header h2 {
+      font-size: 13pt;
+      font-weight: bold;
+      margin-bottom: 0;
+    }
+
+    .print-header h3 {
+      font-size: 14pt;
+      font-weight: bold;
+      text-decoration: underline;
+      margin-bottom: 2px;
+    }
+
+    .print-header .address {
+      font-size: 10pt;
+      margin-top: 2px;
+    }
+
+    /* Nomor */
+    .nomor-section {
+      text-align: right;
+      margin: 20px 0;
+      font-size: 12pt;
+    }
+
+    .nomor-section table {
+      margin-left: auto;
+    }
+
+    .nomor-section td {
+      padding: 1px 4px;
+    }
+
+    /* Title */
+    .sppd-title {
+      text-align: center;
+      margin: 20px 0 16px;
+    }
+
+    .sppd-title h2 {
+      font-size: 13pt;
+      font-weight: bold;
+      text-decoration: underline;
+      margin-bottom: 2px;
+    }
+
+    .sppd-title p {
+      font-size: 13pt;
+      font-weight: bold;
+    }
+
+    /* Main Table */
+    .sppd-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 24px;
+    }
+
+    .sppd-table td {
+      border: 1px solid #000;
+      padding: 6px 10px;
+      vertical-align: top;
+      font-size: 11.5pt;
+    }
+
+    .sppd-table .col-no {
+      width: 35px;
+      text-align: center;
+    }
+
+    .sppd-table .col-label {
+      width: 42%;
+    }
+
+    .sppd-table .col-value {
+      width: auto;
+    }
+
+    .sub-item {
+      padding-left: 20px;
+    }
+
+    /* Footer */
+    .print-footer {
+      margin-top: 30px;
+      text-align: right;
+      padding-right: 40px;
+    }
+
+    .print-footer .sign-section {
+      display: inline-block;
+      text-align: center;
+      min-width: 250px;
+    }
+
+    .sign-space {
+      height: 70px;
+    }
+
+    .sign-name {
+      font-weight: bold;
+      text-decoration: underline;
+    }
+
+    /* Credit Footer */
+    .credit-footer {
+      margin-top: 40px;
+      text-align: center;
+      font-size: 8pt;
+      color: #999;
+      border-top: 1px solid #ddd;
+      padding-top: 8px;
+    }
+
+    /* Print Button (hidden when printing) */
+    .print-btn-container {
+      text-align: center;
+      margin: 20px 0;
+    }
+
+    .btn-do-print {
+      padding: 12px 32px;
+      font-size: 14px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      background: linear-gradient(135deg, #3949ab, #00bcd4);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+
+    .btn-do-print:hover {
+      opacity: 0.9;
+    }
+
+    .btn-close-print {
+      padding: 12px 32px;
+      font-size: 14px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      background: #e0e0e0;
+      color: #333;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    @media print {
+      .print-btn-container {
+        display: none !important;
+      }
+      .credit-footer {
+        display: none !important;
+      }
+      body {
+        padding: 0;
+      }
+      .print-container {
+        padding: 0;
+      }
+    }
+
+    /* Loading */
+    .loading-text {
+      text-align: center;
+      padding: 60px;
+      font-size: 16pt;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="print-container" id="printContent">
+    <div class="loading-text" id="loadingText">Memuat data SPPD...</div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get('id');
+
+      if (!id) {
+        document.getElementById('loadingText').textContent = 'ID SPPD tidak ditemukan.';
+        return;
+      }
+
+      loadAndRender(id);
+    });
+
+    async function loadAndRender(id) {
+      try {
+        const res = await fetch(`/api/sppd/${id}`);
+        const result = await res.json();
+
+        if (!result.success) {
+          document.getElementById('loadingText').textContent = 'Data tidak ditemukan.';
+          return;
+        }
+
+        renderSppd(result.data);
+      } catch (error) {
+        document.getElementById('loadingText').textContent = 'Gagal memuat data.';
+      }
+    }
+
+    function renderSppd(data) {
+      const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+      function formatDate(dateStr) {
+        if (!dateStr) return '-';
+        const d = new Date(dateStr);
+        return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+      }
+
+      const today = new Date();
+      const todayStr = `${today.getDate()} ${months[today.getMonth()]} ${today.getFullYear()}`;
+
+      const container = document.getElementById('printContent');
+      container.innerHTML = `
+        <!-- Print Buttons -->
+        <div class="print-btn-container">
+          <button class="btn-do-print" onclick="window.print()">🖨️ Cetak Sekarang</button>
+          <button class="btn-close-print" onclick="window.close()">✖ Tutup</button>
+        </div>
+
+        <!-- Header Kop Surat -->
+        <div class="print-header">
+          <img src="assets/logo.png" alt="Logo">
+          <h1>PEMERINTAH KABUPATEN MAGELANG</h1>
+          <h2>KECAMATAN BOROBUDUR</h2>
+          <h3>DESA KEMBANGLIMUS</h3>
+          <div class="address">
+            Jl. Sudirman KM. 03, Kembanglimus, Borobudur Kode Pos : 56553<br>
+            Telp : (0293) 7182286 E-Mail : desakembanglimus1@gmail.com
+          </div>
+        </div>
+
+        <!-- Nomor Surat -->
+        <div class="nomor-section">
+          <table>
+            <tr><td>Lembar Ke</td><td>:</td><td></td></tr>
+            <tr><td>Kode No.</td><td>:</td><td></td></tr>
+            <tr><td>Nomor</td><td>:</td><td><strong>${data.nomor_surat}</strong></td></tr>
+          </table>
+        </div>
+
+        <!-- Judul -->
+        <div class="sppd-title">
+          <h2>SURAT PERINTAH PERJALANAN DINAS</h2>
+          <p>(SPPD)</p>
+        </div>
+
+        <!-- Tabel SPPD -->
+        <table class="sppd-table">
+          <tr>
+            <td class="col-no">1.</td>
+            <td class="col-label">Pejabat Yang Memberi Perintah</td>
+            <td class="col-value">Kepala Desa Kembanglimus</td>
+          </tr>
+          <tr>
+            <td class="col-no">2.</td>
+            <td class="col-label">Nama Pegawai Yang Diperintah</td>
+            <td class="col-value">${data.nama_pegawai}</td>
+          </tr>
+          <tr>
+            <td class="col-no" rowspan="3">3.</td>
+            <td class="col-label">a. Pangkat/Golongan</td>
+            <td class="col-value"></td>
+          </tr>
+          <tr>
+            <td class="col-label">b. NIP.</td>
+            <td class="col-value"></td>
+          </tr>
+          <tr>
+            <td class="col-label">c. Jabatan</td>
+            <td class="col-value">${data.jabatan}</td>
+          </tr>
+          <tr>
+            <td class="col-no">4.</td>
+            <td class="col-label">Maksud perjalanan Dinas</td>
+            <td class="col-value">${data.acara}</td>
+          </tr>
+          <tr>
+            <td class="col-no">5.</td>
+            <td class="col-label">Kendaraan yang Dipergunakan</td>
+            <td class="col-value">${data.kendaraan}</td>
+          </tr>
+          <tr>
+            <td class="col-no" rowspan="2">6.</td>
+            <td class="col-label">a. Tempat Berangkat</td>
+            <td class="col-value">Desa Kembanglimus</td>
+          </tr>
+          <tr>
+            <td class="col-label">b. Tempat Tujuan</td>
+            <td class="col-value">${data.tujuan}</td>
+          </tr>
+          <tr>
+            <td class="col-no" rowspan="3">7.</td>
+            <td class="col-label">a. Lamanya Perjalanan Dinas</td>
+            <td class="col-value">${data.lama_perjalanan}</td>
+          </tr>
+          <tr>
+            <td class="col-label">b. Tanggal Berangkat</td>
+            <td class="col-value">${formatDate(data.tanggal_berangkat)}</td>
+          </tr>
+          <tr>
+            <td class="col-label">c. Tanggal Kembali</td>
+            <td class="col-value">${formatDate(data.tanggal_kembali)}</td>
+          </tr>
+          <tr>
+            <td class="col-no" rowspan="3">8.</td>
+            <td class="col-label">Pembebanan Anggaran</td>
+            <td class="col-value">...................</td>
+          </tr>
+          <tr>
+            <td class="col-label"><span class="sub-item">a. Instansi</span></td>
+            <td class="col-value">...................</td>
+          </tr>
+          <tr>
+            <td class="col-label"><span class="sub-item">b. Pasal Anggaran</span></td>
+            <td class="col-value">...................</td>
+          </tr>
+          <tr>
+            <td class="col-no">9.</td>
+            <td class="col-label">Keterangan Lain-Lain</td>
+            <td class="col-value">Lihat Sebaliknya</td>
+          </tr>
+        </table>
+
+        <!-- Footer Tanda Tangan -->
+        <div class="print-footer">
+          <div class="sign-section">
+            <p>Dikeluarkan di&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;&nbsp;Desa Kembanglimus</p>
+            <p>Pada Tanggal&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;&nbsp;${todayStr}</p>
+            <p style="margin-top:4px;">Kepala Desa Kembanglimus</p>
+            <div class="sign-space"></div>
+            <p class="sign-name">SOETJI ARIMBI</p>
+          </div>
+        </div>
+
+        <!-- Credit -->
+        <div class="credit-footer">
+          &copy; 2026 Pelayanan Pemerintah Desa &middot; Dibuat oleh Dadang
+        </div>
+      `;
+    }
+  </script>
+
+</body>
+</html>

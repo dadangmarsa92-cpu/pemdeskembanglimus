@@ -1,13 +1,101 @@
 // ============================================================
-// DASHBOARD PAGE LOGIC
+// DASHBOARD PAGE LOGIC - With Sidebar Navigation
 // ============================================================
 
 document.addEventListener('DOMContentLoaded', () => {
   checkSession();
+  initSidebar();
+  initNavigation();
 
   // Logout button
   document.getElementById('btnLogout').addEventListener('click', handleLogout);
 });
+
+// ── Page Title Map ──
+const pageTitles = {
+  dashboard: 'Dashboard',
+  sppd: 'SPPD',
+  rab: 'RAB',
+  permohonan: 'Permohonan Narasumber',
+  sk: 'SK Narasumber',
+  laporan: 'Laporan',
+  pengaturan: 'Pengaturan'
+};
+
+// ── Initialize Sidebar Toggle ──
+function initSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+  const hamburger = document.getElementById('hamburgerBtn');
+  const closeBtn = document.getElementById('sidebarClose');
+
+  hamburger.addEventListener('click', () => {
+    sidebar.classList.add('open');
+    overlay.classList.add('active');
+  });
+
+  closeBtn.addEventListener('click', closeSidebar);
+  overlay.addEventListener('click', closeSidebar);
+
+  function closeSidebar() {
+    sidebar.classList.remove('open');
+    overlay.classList.remove('active');
+  }
+
+  // Close sidebar on link click (mobile)
+  document.querySelectorAll('.sidebar-link').forEach(link => {
+    link.addEventListener('click', () => {
+      if (window.innerWidth <= 1024) {
+        closeSidebar();
+      }
+    });
+  });
+}
+
+// ── Initialize Navigation ──
+function initNavigation() {
+  const links = document.querySelectorAll('.sidebar-link');
+
+  links.forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const page = link.dataset.page;
+      navigateTo(page);
+    });
+  });
+
+  // Clickable stat cards on dashboard
+  document.querySelectorAll('.stat-card.clickable').forEach(card => {
+    card.addEventListener('click', () => {
+      const target = card.dataset.target;
+      if (target) navigateTo(target);
+    });
+  });
+}
+
+// ── Navigate to Page ──
+function navigateTo(page) {
+  // Update sidebar active state
+  document.querySelectorAll('.sidebar-link').forEach(link => {
+    link.classList.toggle('active', link.dataset.page === page);
+  });
+
+  // Show/hide page sections
+  document.querySelectorAll('.page-section').forEach(section => {
+    section.classList.remove('active');
+  });
+
+  const targetPage = document.getElementById(`page-${page}`);
+  if (targetPage) {
+    targetPage.classList.add('active');
+  }
+
+  // Update top nav title
+  const pageTitle = document.getElementById('pageTitle');
+  if (pageTitle && pageTitles[page]) {
+    pageTitle.textContent = pageTitles[page];
+  }
+}
 
 // ── Check Session ──
 async function checkSession() {
@@ -37,10 +125,15 @@ async function checkSession() {
 
 // ── Render Dashboard ──
 function renderDashboard(user) {
-  // Nav
+  // Nav bar
   document.getElementById('navUsername').textContent = user.username;
   document.getElementById('navRole').textContent = user.role;
   document.getElementById('userAvatar').textContent = user.username.charAt(0).toUpperCase();
+
+  // Sidebar
+  document.getElementById('sidebarUsername').textContent = user.username;
+  document.getElementById('sidebarRole').textContent = user.role;
+  document.getElementById('sidebarAvatar').textContent = user.username.charAt(0).toUpperCase();
 
   // Welcome
   document.getElementById('welcomeName').textContent = user.username;
@@ -52,6 +145,12 @@ function renderDashboard(user) {
     document.getElementById('welcomeDesc').textContent =
       'Anda login sebagai User. Anda dapat mengakses layanan pelayanan desa yang tersedia.';
   }
+
+  // Set placeholder stats (will be dynamic later)
+  document.getElementById('statSppd').textContent = '0';
+  document.getElementById('statRab').textContent = '0';
+  document.getElementById('statPermohonan').textContent = '0';
+  document.getElementById('statSk').textContent = '0';
 }
 
 // ── Load Users Table (SuperUser) ──
@@ -66,9 +165,6 @@ async function loadUsersTable() {
 
       const tbody = document.getElementById('usersTableBody');
       tbody.innerHTML = '';
-
-      // Update stat
-      document.getElementById('statUsers').textContent = data.users.length;
 
       data.users.forEach(user => {
         const tr = document.createElement('tr');

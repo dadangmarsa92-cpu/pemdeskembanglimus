@@ -16,21 +16,114 @@
   <!-- Toast Container -->
   <div class="toast-container" id="toastContainer"></div>
 
+  <!-- Sidebar Overlay (mobile) -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
   <div class="dashboard-wrapper">
 
-    <!-- Top Navigation -->
-    <nav class="top-nav">
-      <div class="nav-brand">
-        <img src="assets/logo.png" alt="Logo">
-        <h2>Pelayanan <span>Pemdes</span></h2>
-      </div>
-      <div class="nav-user">
-        <div class="nav-user-info">
-          <div class="user-name" id="navUsername">-</div>
-          <div class="user-role" id="navRole">-</div>
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <img src="assets/logo.png" alt="Logo" class="sidebar-logo">
+        <div class="sidebar-title">
+          <h2>Pelayanan <span>Pemdes</span></h2>
+          <p>Sistem Informasi</p>
         </div>
-        <div class="user-avatar" id="userAvatar">?</div>
-        <button class="btn-logout" id="btnLogout">
+        <button class="sidebar-close" id="sidebarClose" aria-label="Close sidebar">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <nav class="sidebar-nav">
+        <ul>
+          <li>
+            <a href="#" class="sidebar-link active" data-page="dashboard">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+              </svg>
+              <span>Dashboard</span>
+            </a>
+          </li>
+          <li class="sidebar-section-label">Menu Utama</li>
+          <li>
+            <a href="#" class="sidebar-link" data-page="sppd">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+              <span>SPPD</span>
+            </a>
+          </li>
+          <li>
+            <a href="#" class="sidebar-link" data-page="rab">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="1" x2="12" y2="23"></line>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+              </svg>
+              <span>RAB</span>
+            </a>
+          </li>
+          <li>
+            <a href="#" class="sidebar-link" data-page="permohonan">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="8.5" cy="7" r="4"></circle>
+                <line x1="20" y1="8" x2="20" y2="14"></line>
+                <line x1="23" y1="11" x2="17" y2="11"></line>
+              </svg>
+              <span>Permohonan Narasumber</span>
+            </a>
+          </li>
+          <li>
+            <a href="#" class="sidebar-link" data-page="sk">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              </svg>
+              <span>SK Narasumber</span>
+            </a>
+          </li>
+          <li class="sidebar-section-label">Lainnya</li>
+          <li>
+            <a href="#" class="sidebar-link" data-page="laporan">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="20" x2="18" y2="10"></line>
+                <line x1="12" y1="20" x2="12" y2="4"></line>
+                <line x1="6" y1="20" x2="6" y2="14"></line>
+              </svg>
+              <span>Laporan</span>
+            </a>
+          </li>
+          <li>
+            <a href="#" class="sidebar-link" data-page="pengaturan">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+              </svg>
+              <span>Pengaturan</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="user-avatar sidebar-avatar" id="sidebarAvatar">?</div>
+          <div class="sidebar-user-info">
+            <div class="user-name" id="sidebarUsername">-</div>
+            <div class="user-role" id="sidebarRole">-</div>
+          </div>
+        </div>
+        <button class="btn-logout sidebar-logout" id="btnLogout">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;vertical-align:middle;">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
             <polyline points="16 17 21 12 16 7"></polyline>
@@ -39,68 +132,317 @@
           Logout
         </button>
       </div>
-    </nav>
+    </aside>
 
-    <!-- Dashboard Content -->
-    <div class="dashboard-content">
+    <!-- Main Area -->
+    <div class="main-area">
 
-      <!-- Welcome Section -->
-      <div class="welcome-section">
-        <h1>Selamat Datang, <span id="welcomeName">User</span>! 👋</h1>
-        <p id="welcomeDesc">Anda login sebagai pengguna sistem pelayanan desa.</p>
-      </div>
-
-      <!-- Stats Cards -->
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-icon blue">📋</div>
-          <div class="stat-value">128</div>
-          <div class="stat-label">Total Layanan</div>
+      <!-- Top Navigation -->
+      <nav class="top-nav">
+        <div class="nav-left">
+          <button class="hamburger" id="hamburgerBtn" aria-label="Toggle sidebar">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+          <h2 class="page-title" id="pageTitle">Dashboard</h2>
         </div>
-        <div class="stat-card">
-          <div class="stat-icon teal">👥</div>
-          <div class="stat-value" id="statUsers">-</div>
-          <div class="stat-label">Pengguna Terdaftar</div>
+        <div class="nav-user">
+          <div class="nav-user-info">
+            <div class="user-name" id="navUsername">-</div>
+            <div class="user-role" id="navRole">-</div>
+          </div>
+          <div class="user-avatar" id="userAvatar">?</div>
         </div>
-        <div class="stat-card">
-          <div class="stat-icon green">✅</div>
-          <div class="stat-value">96</div>
-          <div class="stat-label">Layanan Selesai</div>
+      </nav>
+
+      <!-- Main Content Pages -->
+      <div class="dashboard-content">
+
+        <!-- ═══════════════ PAGE: DASHBOARD ═══════════════ -->
+        <div class="page-section active" id="page-dashboard">
+          <div class="welcome-section">
+            <h1>Selamat Datang, <span id="welcomeName">User</span>! 👋</h1>
+            <p id="welcomeDesc">Anda login sebagai pengguna sistem pelayanan desa.</p>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card clickable" data-target="sppd">
+              <div class="stat-icon blue">📋</div>
+              <div class="stat-value" id="statSppd">0</div>
+              <div class="stat-label">Data SPPD</div>
+            </div>
+            <div class="stat-card clickable" data-target="rab">
+              <div class="stat-icon teal">💰</div>
+              <div class="stat-value" id="statRab">0</div>
+              <div class="stat-label">Data RAB</div>
+            </div>
+            <div class="stat-card clickable" data-target="permohonan">
+              <div class="stat-icon green">👥</div>
+              <div class="stat-value" id="statPermohonan">0</div>
+              <div class="stat-label">Permohonan Narasumber</div>
+            </div>
+            <div class="stat-card clickable" data-target="sk">
+              <div class="stat-icon orange">✅</div>
+              <div class="stat-value" id="statSk">0</div>
+              <div class="stat-label">SK Narasumber</div>
+            </div>
+          </div>
+
+          <!-- Users Table (SuperUser Only) -->
+          <div class="table-section" id="usersTableSection" style="display:none;">
+            <h2>📊 Daftar Pengguna Sistem</h2>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Username</th>
+                  <th>Hak Akses</th>
+                  <th>Tanggal Dibuat</th>
+                </tr>
+              </thead>
+              <tbody id="usersTableBody"></tbody>
+            </table>
+          </div>
         </div>
-        <div class="stat-card">
-          <div class="stat-icon orange">⏳</div>
-          <div class="stat-value">32</div>
-          <div class="stat-label">Dalam Proses</div>
+
+        <!-- ═══════════════ PAGE: SPPD ═══════════════ -->
+        <div class="page-section" id="page-sppd">
+          <div class="page-header-section">
+            <div>
+              <h1>📋 SPPD</h1>
+              <p>Surat Perintah Perjalanan Dinas</p>
+            </div>
+          </div>
+
+          <!-- SPPD Form -->
+          <div class="form-card">
+            <h2 class="form-card-title">✏️ Input Data SPPD</h2>
+            <form id="sppdForm" autocomplete="off">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="sppdNomor">Nomor Surat</label>
+                  <div class="input-wrapper">
+                    <input type="text" id="sppdNomor" class="form-input" placeholder="Contoh: 045/001/2026" required style="padding-left:16px;">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="sppdNama">Nama Pegawai Yang Diperintah</label>
+                  <div class="input-wrapper">
+                    <input type="text" id="sppdNama" class="form-input" placeholder="Masukkan nama pegawai" required style="padding-left:16px;">
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="sppdJabatan">Jabatan</label>
+                  <div class="input-wrapper">
+                    <input type="text" id="sppdJabatan" class="form-input" placeholder="Contoh: Sekretaris Desa" required style="padding-left:16px;">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="sppdAcara">Maksud Perjalanan Dinas</label>
+                  <div class="input-wrapper">
+                    <input type="text" id="sppdAcara" class="form-input" placeholder="Contoh: Menghadiri Rapat Koordinasi" required style="padding-left:16px;">
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="sppdKendaraan">Kendaraan yang Dipergunakan</label>
+                  <div class="input-wrapper">
+                    <input type="text" id="sppdKendaraan" class="form-input" placeholder="Contoh: Kendaraan Dinas / Roda Dua" required style="padding-left:16px;">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="sppdTujuan">Tempat Tujuan</label>
+                  <div class="input-wrapper">
+                    <input type="text" id="sppdTujuan" class="form-input" placeholder="Contoh: Kantor Kecamatan Borobudur" required style="padding-left:16px;">
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-row form-row-3">
+                <div class="form-group">
+                  <label for="sppdLama">Lama Perjalanan Dinas</label>
+                  <div class="input-wrapper">
+                    <input type="text" id="sppdLama" class="form-input" placeholder="Contoh: 1 Hari" required style="padding-left:16px;">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="sppdTglBerangkat">Tanggal Berangkat</label>
+                  <div class="input-wrapper">
+                    <input type="date" id="sppdTglBerangkat" class="form-input" required style="padding-left:16px;">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="sppdTglKembali">Tanggal Kembali</label>
+                  <div class="input-wrapper">
+                    <input type="date" id="sppdTglKembali" class="form-input" required style="padding-left:16px;">
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <button type="submit" class="btn-save" id="btnSaveSppd">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;vertical-align:middle;">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                  </svg>
+                  Simpan
+                </button>
+                <button type="button" class="btn-cancel" id="btnCancelSppd">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;vertical-align:middle;">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                  Batal
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- SPPD Data Table -->
+          <div class="table-section" id="sppdTableSection" style="margin-top:28px;">
+            <h2>📊 Data SPPD Tersimpan</h2>
+            <div style="overflow-x:auto;">
+              <table class="data-table" id="sppdTable">
+                <thead>
+                  <tr>
+                    <th>No</th>
+                    <th>Nomor Surat</th>
+                    <th>Nama Pegawai</th>
+                    <th>Jabatan</th>
+                    <th>Tujuan</th>
+                    <th>Tgl Berangkat</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="sppdTableBody">
+                  <!-- Filled by JS -->
+                </tbody>
+              </table>
+            </div>
+            <div class="empty-state" id="sppdEmptyState" style="display:none; padding:40px 20px;">
+              <div class="empty-icon">📋</div>
+              <h3>Belum Ada Data SPPD</h3>
+              <p>Silakan isi form di atas untuk menambah data SPPD.</p>
+            </div>
+          </div>
         </div>
-      </div>
 
-      <!-- Users Table (SuperUser Only) -->
-      <div class="table-section" id="usersTableSection" style="display:none;">
-        <h2>📊 Daftar Pengguna Sistem</h2>
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Username</th>
-              <th>Hak Akses</th>
-              <th>Tanggal Dibuat</th>
-            </tr>
-          </thead>
-          <tbody id="usersTableBody">
-            <!-- Filled by JS -->
-          </tbody>
-        </table>
-      </div>
+        <!-- ═══ PRINT CONFIRMATION MODAL ═══ -->
+        <div class="modal-overlay" id="printModal">
+          <div class="modal-card">
+            <div class="modal-icon">🖨️</div>
+            <h3>Data Berhasil Disimpan!</h3>
+            <p>Apakah Anda ingin mencetak Surat Perintah Perjalanan Dinas ini?</p>
+            <div class="modal-actions">
+              <button class="btn-save" id="btnPrintYes">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;vertical-align:middle;">
+                  <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                  <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                  <rect x="6" y="14" width="12" height="8"></rect>
+                </svg>
+                Ya, Cetak
+              </button>
+              <button class="btn-cancel" id="btnPrintNo">Tidak, Nanti Saja</button>
+            </div>
+          </div>
+        </div>
 
-      <!-- Footer -->
-      <div class="login-footer" style="margin-top:40px; padding-bottom:24px;">
-        &copy; 2026 Pelayanan Pemerintah Desa &middot; Sistem Informasi Digital<br>
-        Dibuat oleh <strong>Dadang</strong>
-      </div>
+        <!-- ═══════════════ PAGE: RAB ═══════════════ -->
+        <div class="page-section" id="page-rab">
+          <div class="page-header-section">
+            <div>
+              <h1>💰 RAB</h1>
+              <p>Rencana Anggaran Biaya</p>
+            </div>
+          </div>
+          <div class="empty-state">
+            <div class="empty-icon">💰</div>
+            <h3>Belum Ada Data RAB</h3>
+            <p>Data Rencana Anggaran Biaya akan ditampilkan di sini.</p>
+          </div>
+        </div>
 
+        <!-- ═══════════════ PAGE: PERMOHONAN NARASUMBER ═══════════════ -->
+        <div class="page-section" id="page-permohonan">
+          <div class="page-header-section">
+            <div>
+              <h1>👥 Permohonan Narasumber</h1>
+              <p>Kelola permohonan narasumber kegiatan desa</p>
+            </div>
+          </div>
+          <div class="empty-state">
+            <div class="empty-icon">👥</div>
+            <h3>Belum Ada Permohonan</h3>
+            <p>Data permohonan narasumber akan ditampilkan di sini.</p>
+          </div>
+        </div>
+
+        <!-- ═══════════════ PAGE: SK NARASUMBER ═══════════════ -->
+        <div class="page-section" id="page-sk">
+          <div class="page-header-section">
+            <div>
+              <h1>✅ SK Narasumber</h1>
+              <p>Surat Keputusan Narasumber</p>
+            </div>
+          </div>
+          <div class="empty-state">
+            <div class="empty-icon">✅</div>
+            <h3>Belum Ada SK</h3>
+            <p>Data Surat Keputusan Narasumber akan ditampilkan di sini.</p>
+          </div>
+        </div>
+
+        <!-- ═══════════════ PAGE: LAPORAN ═══════════════ -->
+        <div class="page-section" id="page-laporan">
+          <div class="page-header-section">
+            <div>
+              <h1>📊 Laporan</h1>
+              <p>Rekapitulasi dan laporan kegiatan</p>
+            </div>
+          </div>
+          <div class="empty-state">
+            <div class="empty-icon">📊</div>
+            <h3>Belum Ada Laporan</h3>
+            <p>Laporan pelayanan desa akan ditampilkan di sini.</p>
+          </div>
+        </div>
+
+        <!-- ═══════════════ PAGE: PENGATURAN ═══════════════ -->
+        <div class="page-section" id="page-pengaturan">
+          <div class="page-header-section">
+            <div>
+              <h1>⚙️ Pengaturan</h1>
+              <p>Konfigurasi sistem dan akun</p>
+            </div>
+          </div>
+          <div class="empty-state">
+            <div class="empty-icon">⚙️</div>
+            <h3>Pengaturan Sistem</h3>
+            <p>Fitur pengaturan akan segera tersedia.</p>
+          </div>
+        </div>
+
+        <!-- Footer (tampil di semua halaman) -->
+        <div class="login-footer" style="margin-top:40px; padding-bottom:24px;">
+          &copy; 2026 Pelayanan Pemerintah Desa &middot; Sistem Informasi Digital<br>
+          Dibuat oleh <strong>Dadang</strong>
+        </div>
+
+      </div>
     </div>
+
   </div>
 
   <script src="js/dashboard.js"></script>
+  <script src="js/sppd.js"></script>
 </body>
 </html>

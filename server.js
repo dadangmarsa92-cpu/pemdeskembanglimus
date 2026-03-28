@@ -37,6 +37,23 @@ async function initDatabase() {
     )
   `);
 
+  // Create SPPD table if not exists
+  db.run(`
+    CREATE TABLE IF NOT EXISTS sppd (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nomor_surat TEXT NOT NULL,
+      nama_pegawai TEXT NOT NULL,
+      jabatan TEXT NOT NULL,
+      acara TEXT NOT NULL,
+      kendaraan TEXT NOT NULL,
+      tujuan TEXT NOT NULL,
+      lama_perjalanan TEXT NOT NULL,
+      tanggal_berangkat TEXT NOT NULL,
+      tanggal_kembali TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
   // Insert default users if table is empty
   const result = db.exec('SELECT COUNT(*) as count FROM users');
   const count = result[0].values[0][0];
@@ -170,6 +187,109 @@ app.get('/api/users', (req, res) => {
   }
 
   res.json({ success: true, users });
+});
+
+// ============================================================
+// SPPD API ROUTES
+// ============================================================
+
+// Create SPPD
+app.post('/api/sppd', (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ success: false, message: 'Belum login.' });
+  }
+
+  const { nomor_surat, nama_pegawai, jabatan, acara, kendaraan, tujuan, lama_perjalanan, tanggal_berangkat, tanggal_kembali } = req.body;
+
+  if (!nomor_surat || !nama_pegawai || !jabatan || !acara || !kendaraan || !tujuan || !lama_perjalanan || !tanggal_berangkat || !tanggal_kembali) {
+    return res.status(400).json({ success: false, message: 'Semua field wajib diisi.' });
+  }
+
+  db.run(
+    `INSERT INTO sppd (nomor_surat, nama_pegawai, jabatan, acara, kendaraan, tujuan, lama_perjalanan, tanggal_berangkat, tanggal_kembali) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [nomor_surat, nama_pegawai, jabatan, acara, kendaraan, tujuan, lama_perjalanan, tanggal_berangkat, tanggal_kembali]
+  );
+  saveDatabase();
+
+  // Get the last inserted id
+  const lastId = db.exec('SELECT last_insert_rowid() as id');
+  const id = lastId[0].values[0][0];
+
+  res.json({ success: true, message: 'Data SPPD berhasil disimpan.', id });
+});
+
+// Get all SPPD
+app.get('/api/sppd', (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ success: false, message: 'Belum login.' });
+  }
+
+  const result = db.exec('SELECT * FROM sppd ORDER BY id DESC');
+  const items = [];
+
+  if (result.length > 0) {
+    const columns = result[0].columns;
+    result[0].values.forEach(row => {
+      const obj = {};
+      columns.forEach((col, i) => { obj[col] = row[i]; });
+      items.push(obj);
+    });
+  }
+
+  res.json({ success: true, data: items });
+});
+
+// Get single SPPD by ID
+app.get('/api/sppd/:id', (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ success: false, message: 'Belum login.' });
+  }
+
+  const stmt = db.prepare('SELECT * FROM sppd WHERE id = ?');
+  stmt.bind([parseInt(req.params.id)]);
+
+  let item = null;
+  if (stmt.step()) {
+    item = stmt.getAsObject();
+  }
+  stmt.free();
+
+  if (!item) {
+    return res.status(404).json({ success: false, message: 'Data tidak ditemukan.' });
+  }
+
+  res.json({ success: true, data: item });
+});
+
+// Delete SPPD
+app.delete('/api/sppd/:id', (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ success: false, message: 'Belum login.' });
+  }
+
+  db.run('DELETE FROM sppd WHERE id = ?', [parseInt(req.params.id)]);
+  saveDatabase();
+
+  res.json({ success: true, message: 'Data SPPD berhasil dihapus.' });
+});
+
+// Get stats count
+app.get('/api/stats', (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ success: false, message: 'Belum login.' });
+  }
+
+  const sppdCount = db.exec('SELECT COUNT(*) FROM sppd');
+
+  res.json({
+    success: true,
+    stats: {
+      sppd: sppdCount[0].values[0][0],
+      rab: 0,
+      permohonan: 0,
+      sk: 0
+    }
+  });
 });
 
 // ============================================================
