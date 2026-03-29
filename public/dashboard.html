@@ -219,7 +219,8 @@
 
           <!-- SPPD Form -->
           <div class="form-card">
-            <h2 class="form-card-title">✏️ Input Data SPPD</h2>
+            <h2 class="form-card-title" id="formSppdTitle">✏️ Input Data SPPD</h2>
+            <input type="hidden" id="sppdEditId" value="">
             <form id="sppdForm" autocomplete="off">
               <div class="form-row">
                 <div class="form-group">
@@ -273,9 +274,11 @@
               <div class="form-row form-row-3">
                 <div class="form-group">
                   <label for="sppdLama">Lama Perjalanan Dinas</label>
-                  <div class="input-wrapper">
-                    <input type="text" id="sppdLama" class="form-input" placeholder="Contoh: 1 Hari" required style="padding-left:16px;">
+                  <div class="input-wrapper lama-input-wrapper">
+                    <input type="number" id="sppdLama" class="form-input" placeholder="Contoh: 1" min="1" max="365" required style="padding-left:16px;">
+                    <span class="lama-suffix">hari</span>
                   </div>
+                  <small class="field-note">Masukkan angka hari (contoh: 1 → disimpan sebagai "1 (satu) hari")</small>
                 </div>
                 <div class="form-group">
                   <label for="sppdTglBerangkat">Tanggal Berangkat</label>
@@ -284,10 +287,14 @@
                   </div>
                 </div>
                 <div class="form-group">
-                  <label for="sppdTglKembali">Tanggal Kembali</label>
+                  <label for="sppdTglKembali">
+                    Tanggal Kembali
+                    <span class="nomor-auto-badge">🔄 Otomatis</span>
+                  </label>
                   <div class="input-wrapper">
-                    <input type="date" id="sppdTglKembali" class="form-input" required style="padding-left:16px;">
+                    <input type="date" id="sppdTglKembali" class="form-input" required style="padding-left:16px; opacity:0.8; cursor:not-allowed;" readonly>
                   </div>
+                  <small class="field-note">Dihitung otomatis dari Tgl Berangkat + Lama Perjalanan</small>
                 </div>
               </div>
 
@@ -298,14 +305,14 @@
                     <polyline points="17 21 17 13 7 13 7 21"></polyline>
                     <polyline points="7 3 7 8 15 8"></polyline>
                   </svg>
-                  Simpan
+                  <span id="btnSaveSppdText">Simpan</span>
                 </button>
                 <button type="button" class="btn-cancel" id="btnCancelSppd">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;vertical-align:middle;">
                     <line x1="18" y1="6" x2="6" y2="18"></line>
                     <line x1="6" y1="6" x2="18" y2="18"></line>
                   </svg>
-                  Batal
+                  <span id="btnCancelSppdText">Batal / Reset</span>
                 </button>
               </div>
             </form>

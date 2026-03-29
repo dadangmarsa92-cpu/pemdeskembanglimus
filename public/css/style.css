@@ -884,6 +884,11 @@ body {
   transition: all var(--transition-fast);
 }
 
+.btn-action.btn-edit:hover {
+  background: rgba(255, 193, 7, 0.15);
+  border-color: #ffc107;
+}
+
 .btn-action.btn-print:hover {
   background: rgba(0, 188, 212, 0.15);
   border-color: var(--accent);
@@ -893,6 +898,27 @@ body {
   background: rgba(239, 83, 80, 0.15);
   border-color: var(--danger);
 }
+
+/* Suffix 'hari' on number input */
+.lama-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.lama-suffix {
+  position: absolute;
+  right: 16px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  pointer-events: none;
+  font-weight: 500;
+}
+
+#sppdLama {
+  padding-right: 50px !important;
+}
+
 
 /* ================================================================
    MODAL STYLES

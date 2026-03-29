@@ -370,6 +370,34 @@ app.delete('/api/sppd/:id', (req, res) => {
   res.json({ success: true, message: 'Data SPPD berhasil dihapus.' });
 });
 
+// Update SPPD
+app.put('/api/sppd/:id', (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ success: false, message: 'Belum login.' });
+  }
+
+  const { nomor_surat, nama_pegawai, jabatan, acara, kendaraan, tujuan, lama_perjalanan, tanggal_berangkat, tanggal_kembali } = req.body;
+
+  if (!nomor_surat || !nama_pegawai || !jabatan || !acara || !kendaraan || !tujuan || !lama_perjalanan || !tanggal_berangkat || !tanggal_kembali) {
+    return res.status(400).json({ success: false, message: 'Semua field wajib diisi.' });
+  }
+
+  // Check if exists
+  const existing = db.exec(`SELECT id FROM sppd WHERE id = ${parseInt(req.params.id)}`);
+  if (!existing.length) {
+    return res.status(404).json({ success: false, message: 'Data tidak ditemukan.' });
+  }
+
+  db.run(
+    `UPDATE sppd SET nomor_surat=?, nama_pegawai=?, jabatan=?, acara=?, kendaraan=?, tujuan=?, lama_perjalanan=?, tanggal_berangkat=?, tanggal_kembali=? WHERE id=?`,
+    [nomor_surat, nama_pegawai, jabatan, acara, kendaraan, tujuan, lama_perjalanan, tanggal_berangkat, tanggal_kembali, parseInt(req.params.id)]
+  );
+  saveDatabase();
+
+  res.json({ success: true, message: 'Data SPPD berhasil diperbarui.' });
+});
+
+
 // Get stats count
 app.get('/api/stats', (req, res) => {
   if (!req.session.userId) {

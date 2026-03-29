@@ -1,5 +1,5 @@
 // ============================================================
-// SPPD MODULE - Form handling, data table, print
+// SPPD MODULE - Form handling, data table, print, edit
 // ============================================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -9,6 +9,67 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 let lastSavedId = null;
+let isEditMode = false;
+let editingId = null;
+
+// ── Konversi angka ke kata Indonesia ──
+function angkaKeHuruf(n) {
+  if (isNaN(n) || n < 1) return '';
+  n = parseInt(n);
+  const satuan = ['', 'satu', 'dua', 'tiga', 'empat', 'lima', 'enam', 'tujuh', 'delapan', 'sembilan'];
+  const belasan = ['sepuluh', 'sebelas', 'dua belas', 'tiga belas', 'empat belas', 'lima belas',
+    'enam belas', 'tujuh belas', 'delapan belas', 'sembilan belas'];
+  const puluhan = ['', '', 'dua puluh', 'tiga puluh', 'empat puluh', 'lima puluh',
+    'enam puluh', 'tujuh puluh', 'delapan puluh', 'sembilan puluh'];
+
+  if (n < 10) return satuan[n];
+  if (n < 20) return belasan[n - 10];
+  if (n < 100) {
+    const t = Math.floor(n / 10);
+    const s = n % 10;
+    return puluhan[t] + (s ? ' ' + satuan[s] : '');
+  }
+  if (n === 100) return 'seratus';
+  if (n < 200) return 'seratus ' + angkaKeHuruf(n - 100);
+  if (n < 1000) {
+    const r = Math.floor(n / 100);
+    return satuan[r] + ' ratus' + (n % 100 ? ' ' + angkaKeHuruf(n % 100) : '');
+  }
+  return String(n);
+}
+
+// ── Format Lama Perjalanan untuk disimpan ──
+function formatLamaPerjalanan(angka) {
+  const n = parseInt(angka);
+  if (isNaN(n) || n < 1) return '';
+  const kata = angkaKeHuruf(n);
+  return `${n} (${kata}) hari`;
+}
+
+// ── Ekstrak angka dari format tersimpan "1 (satu) hari" → "1" ──
+function extractAngkaLama(lamaStr) {
+  if (!lamaStr) return '';
+  const match = String(lamaStr).match(/^(\d+)/);
+  return match ? match[1] : '';
+}
+
+// ── Hitung tanggal kembali otomatis ──
+function hitungTanggalKembali() {
+  const berangkat = document.getElementById('sppdTglBerangkat').value;
+  const lama = parseInt(document.getElementById('sppdLama').value);
+
+  if (berangkat && lama && lama > 0) {
+    const d = new Date(berangkat);
+    d.setDate(d.getDate() + lama);
+    // Format ke YYYY-MM-DD
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    document.getElementById('sppdTglKembali').value = `${y}-${m}-${day}`;
+  } else {
+    document.getElementById('sppdTglKembali').value = '';
+  }
+}
 
 // ── Initialize SPPD Form ──
 function initSppdForm() {
@@ -17,39 +78,62 @@ function initSppdForm() {
   const btnPrintYes = document.getElementById('btnPrintYes');
   const btnPrintNo = document.getElementById('btnPrintNo');
 
+  // Hitung tanggal kembali saat lama atau tanggal berangkat berubah
+  document.getElementById('sppdLama').addEventListener('input', hitungTanggalKembali);
+  document.getElementById('sppdTglBerangkat').addEventListener('change', hitungTanggalKembali);
+
+  // Pastikan lama hanya angka positif (extra guard)
+  document.getElementById('sppdLama').addEventListener('keypress', (e) => {
+    if (!/[0-9]/.test(e.key)) e.preventDefault();
+  });
+
   // Form submit
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    await saveSppd();
+    if (isEditMode) {
+      await updateSppd();
+    } else {
+      await saveSppd();
+    }
   });
 
-  // Cancel button - reset and refresh nomor surat
+  // Cancel → reset ke mode tambah baru
   btnCancel.addEventListener('click', () => {
-    form.reset();
-    loadNextNomorSurat();
+    resetFormToCreateMode();
   });
 
-  // Print modal buttons
+  // Print modal
   btnPrintYes.addEventListener('click', () => {
     closePrintModal();
-    if (lastSavedId) {
-      printSppd(lastSavedId);
-    }
+    if (lastSavedId) printSppd(lastSavedId);
   });
+  btnPrintNo.addEventListener('click', closePrintModal);
 
-  btnPrintNo.addEventListener('click', () => {
-    closePrintModal();
-  });
-
-  // Close modal on overlay click
   document.getElementById('printModal').addEventListener('click', (e) => {
-    if (e.target === e.currentTarget) {
-      closePrintModal();
-    }
+    if (e.target === e.currentTarget) closePrintModal();
   });
 
-  // Load auto-generated nomor surat on init
+  // Load nomor otomatis
   loadNextNomorSurat();
+}
+
+// ── Reset form ke mode "tambah baru" ──
+function resetFormToCreateMode() {
+  isEditMode = false;
+  editingId = null;
+
+  document.getElementById('sppdEditId').value = '';
+  document.getElementById('sppdForm').reset();
+  document.getElementById('sppdTglKembali').value = '';
+
+  document.getElementById('formSppdTitle').textContent = '✏️ Input Data SPPD';
+  document.getElementById('btnSaveSppdText').textContent = 'Simpan';
+  document.getElementById('btnCancelSppdText').textContent = 'Batal / Reset';
+
+  loadNextNomorSurat();
+
+  // Scroll ke atas form
+  document.getElementById('formSppdTitle').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // ── Load Next Nomor Surat (auto) ──
@@ -58,20 +142,25 @@ async function loadNextNomorSurat() {
     const res = await fetch('/api/sppd/next-number');
     if (!res.ok) return;
     const result = await res.json();
-    if (result.success) {
+    if (result.success && !isEditMode) {
       const nomorField = document.getElementById('sppdNomor');
-      if (nomorField) {
-        nomorField.value = result.nomor;
-        nomorField.setAttribute('data-auto', result.nomor);
-      }
+      if (nomorField) nomorField.value = result.nomor;
     }
   } catch (err) {
     console.warn('Gagal memuat nomor surat otomatis:', err);
   }
 }
 
-// ── Save SPPD ──
+// ── Save SPPD (mode tambah baru) ──
 async function saveSppd() {
+  const lamaAngka = document.getElementById('sppdLama').value.trim();
+  const lamaFormatted = formatLamaPerjalanan(lamaAngka);
+
+  if (!lamaFormatted) {
+    showToast('Lama perjalanan harus berupa angka valid (minimal 1).', 'error');
+    return;
+  }
+
   const data = {
     nomor_surat: document.getElementById('sppdNomor').value.trim(),
     nama_pegawai: document.getElementById('sppdNama').value.trim(),
@@ -79,17 +168,13 @@ async function saveSppd() {
     acara: document.getElementById('sppdAcara').value.trim(),
     kendaraan: document.getElementById('sppdKendaraan').value.trim(),
     tujuan: document.getElementById('sppdTujuan').value.trim(),
-    lama_perjalanan: document.getElementById('sppdLama').value.trim(),
+    lama_perjalanan: lamaFormatted,
     tanggal_berangkat: document.getElementById('sppdTglBerangkat').value,
     tanggal_kembali: document.getElementById('sppdTglKembali').value
   };
 
-  // Validate all fields
-  for (const [key, val] of Object.entries(data)) {
-    if (!val) {
-      showToast('Semua field wajib diisi.', 'error');
-      return;
-    }
+  for (const [, val] of Object.entries(data)) {
+    if (!val) { showToast('Semua field wajib diisi.', 'error'); return; }
   }
 
   try {
@@ -98,13 +183,11 @@ async function saveSppd() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-
     const result = await res.json();
 
     if (result.success) {
       lastSavedId = result.id;
-      document.getElementById('sppdForm').reset();
-      // Load next auto number after save
+      resetFormToCreateMode();
       await loadNextNomorSurat();
       loadSppdData();
       loadStats();
@@ -112,8 +195,99 @@ async function saveSppd() {
     } else {
       showToast(result.message, 'error');
     }
-  } catch (error) {
+  } catch {
     showToast('Gagal menyimpan data SPPD.', 'error');
+  }
+}
+
+// ── Update SPPD (mode edit) ──
+async function updateSppd() {
+  const lamaAngka = document.getElementById('sppdLama').value.trim();
+  const lamaFormatted = formatLamaPerjalanan(lamaAngka);
+
+  if (!lamaFormatted) {
+    showToast('Lama perjalanan harus berupa angka valid (minimal 1).', 'error');
+    return;
+  }
+
+  const data = {
+    nomor_surat: document.getElementById('sppdNomor').value.trim(),
+    nama_pegawai: document.getElementById('sppdNama').value.trim(),
+    jabatan: document.getElementById('sppdJabatan').value.trim(),
+    acara: document.getElementById('sppdAcara').value.trim(),
+    kendaraan: document.getElementById('sppdKendaraan').value.trim(),
+    tujuan: document.getElementById('sppdTujuan').value.trim(),
+    lama_perjalanan: lamaFormatted,
+    tanggal_berangkat: document.getElementById('sppdTglBerangkat').value,
+    tanggal_kembali: document.getElementById('sppdTglKembali').value
+  };
+
+  for (const [, val] of Object.entries(data)) {
+    if (!val) { showToast('Semua field wajib diisi.', 'error'); return; }
+  }
+
+  try {
+    const btn = document.getElementById('btnSaveSppd');
+    btn.disabled = true;
+    document.getElementById('btnSaveSppdText').textContent = 'Menyimpan...';
+
+    const res = await fetch(`/api/sppd/${editingId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    const result = await res.json();
+
+    if (result.success) {
+      showToast('✅ Data SPPD berhasil diperbarui!', 'success');
+      resetFormToCreateMode();
+      loadSppdData();
+      loadStats();
+    } else {
+      showToast(result.message, 'error');
+    }
+  } catch {
+    showToast('Gagal memperbarui data SPPD.', 'error');
+  } finally {
+    document.getElementById('btnSaveSppd').disabled = false;
+  }
+}
+
+// ── Edit SPPD — isi form dengan data yang ada ──
+async function editSppd(id) {
+  try {
+    const res = await fetch(`/api/sppd/${id}`);
+    const result = await res.json();
+    if (!result.success) { showToast('Gagal memuat data.', 'error'); return; }
+
+    const d = result.data;
+
+    // Set edit mode
+    isEditMode = true;
+    editingId = id;
+    document.getElementById('sppdEditId').value = id;
+
+    // Isi form
+    document.getElementById('sppdNomor').value = d.nomor_surat;
+    document.getElementById('sppdNama').value = d.nama_pegawai;
+    document.getElementById('sppdJabatan').value = d.jabatan;
+    document.getElementById('sppdAcara').value = d.acara;
+    document.getElementById('sppdKendaraan').value = d.kendaraan;
+    document.getElementById('sppdTujuan').value = d.tujuan;
+    document.getElementById('sppdLama').value = extractAngkaLama(d.lama_perjalanan);
+    document.getElementById('sppdTglBerangkat').value = d.tanggal_berangkat;
+    document.getElementById('sppdTglKembali').value = d.tanggal_kembali;
+
+    // Update UI ke mode edit
+    document.getElementById('formSppdTitle').textContent = `✏️ Edit Data SPPD — ${d.nomor_surat}`;
+    document.getElementById('btnSaveSppdText').textContent = 'Update Data';
+    document.getElementById('btnCancelSppdText').textContent = 'Batal Edit';
+
+    // Scroll ke form
+    document.getElementById('formSppdTitle').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    showToast(`Mode Edit: ${d.nomor_surat}`, 'success');
+  } catch {
+    showToast('Gagal memuat data untuk diedit.', 'error');
   }
 }
 
@@ -146,6 +320,9 @@ async function loadSppdData() {
           <td>${tglBerangkat}</td>
           <td>
             <div class="action-btns">
+              <button class="btn-action btn-edit" onclick="editSppd(${item.id})" title="Edit">
+                ✏️
+              </button>
               <button class="btn-action btn-print" onclick="printSppd(${item.id})" title="Cetak">
                 🖨️
               </button>
@@ -166,12 +343,11 @@ async function loadSppdData() {
   }
 }
 
-// ── Load Stats for Dashboard ──
+// ── Load Stats ──
 async function loadStats() {
   try {
     const res = await fetch('/api/stats');
     const result = await res.json();
-
     if (result.success) {
       document.getElementById('statSppd').textContent = result.stats.sppd;
       document.getElementById('statRab').textContent = result.stats.rab;
@@ -193,14 +369,15 @@ async function deleteSppd(id) {
 
     if (result.success) {
       showToast('Data SPPD berhasil dihapus.', 'success');
+      // Jika sedang edit data yang dihapus, reset form
+      if (isEditMode && editingId === id) resetFormToCreateMode();
       loadSppdData();
       loadStats();
-      // Refresh nomor surat after delete
       loadNextNomorSurat();
     } else {
       showToast(result.message, 'error');
     }
-  } catch (error) {
+  } catch {
     showToast('Gagal menghapus data.', 'error');
   }
 }
@@ -222,7 +399,7 @@ function closePrintModal() {
   document.getElementById('printModal').classList.remove('active');
 }
 
-// ── Format Date ──
+// ── Format Tanggal ID ──
 function formatDateID(dateStr) {
   if (!dateStr) return '-';
   const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
