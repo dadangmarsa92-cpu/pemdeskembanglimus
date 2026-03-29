@@ -54,6 +54,28 @@ async function initDatabase() {
     )
   `);
 
+  // Create settings table
+  db.run(`
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    )
+  `);
+
+  // Insert default settings if not exists
+  const settingsResult = db.exec("SELECT COUNT(*) as count FROM settings");
+  const settingsCount = settingsResult[0].values[0][0];
+  if (settingsCount === 0) {
+    db.run("INSERT INTO settings (key, value) VALUES ('kode_surat', '096')");
+    db.run("INSERT INTO settings (key, value) VALUES ('kode_desa', '18')");
+    db.run("INSERT INTO settings (key, value) VALUES ('tahun', '" + new Date().getFullYear() + "')");
+    db.run("INSERT INTO settings (key, value) VALUES ('nama_desa', 'Kembanglimus')");
+    db.run("INSERT INTO settings (key, value) VALUES ('nama_kecamatan', 'Borobudur')");
+    db.run("INSERT INTO settings (key, value) VALUES ('nama_kabupaten', 'Magelang')");
+    db.run("INSERT INTO settings (key, value) VALUES ('kepala_desa', 'SOETJI ARIMBI')");
+    console.log('✅ Default settings created.');
+  }
+
   // Insert default users if table is empty
   const result = db.exec('SELECT COUNT(*) as count FROM users');
   const count = result[0].values[0][0];
@@ -66,6 +88,35 @@ async function initDatabase() {
 
   // Save to file
   saveDatabase();
+}
+
+// Helper: get all settings as object
+function getSettings() {
+  const result = db.exec('SELECT key, value FROM settings');
+  const settings = {};
+  if (result.length > 0) {
+    result[0].values.forEach(([key, value]) => {
+      settings[key] = value;
+    });
+  }
+  return settings;
+}
+
+// Helper: generate next SPPD number
+function generateNextNomorSurat() {
+  const settings = getSettings();
+  const kode_surat = settings.kode_surat || '096';
+  const kode_desa = settings.kode_desa || '18';
+  const tahun = settings.tahun || new Date().getFullYear().toString();
+
+  // Count existing SPPD with same year
+  const countResult = db.exec(
+    `SELECT COUNT(*) FROM sppd WHERE nomor_surat LIKE '%/${tahun}'`
+  );
+  const count = countResult.length > 0 ? countResult[0].values[0][0] : 0;
+  const urutan = String(parseInt(count) + 1).padStart(3, '0');
+
+  return `${kode_surat}/${urutan}/${kode_desa}/${tahun}`;
 }
 
 // Save database to file
@@ -187,6 +238,52 @@ app.get('/api/users', (req, res) => {
   }
 
   res.json({ success: true, users });
+});
+
+// ============================================================
+// SETTINGS API ROUTES
+// ============================================================
+
+// Get all settings
+app.get('/api/settings', (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ success: false, message: 'Belum login.' });
+  }
+  const settings = getSettings();
+  res.json({ success: true, settings });
+});
+
+// Update settings (SuperUser only)
+app.put('/api/settings', (req, res) => {
+  if (!req.session.userId || req.session.role !== 'SuperUser') {
+    return res.status(403).json({ success: false, message: 'Akses ditolak. Hanya SuperUser.' });
+  }
+
+  const allowed = ['kode_surat', 'kode_desa', 'tahun', 'nama_desa', 'nama_kecamatan', 'nama_kabupaten', 'kepala_desa'];
+  const updates = req.body;
+
+  for (const [key, value] of Object.entries(updates)) {
+    if (allowed.includes(key) && value !== undefined && value !== null) {
+      const existing = db.exec(`SELECT key FROM settings WHERE key = '${key}'`);
+      if (existing.length > 0) {
+        db.run('UPDATE settings SET value = ? WHERE key = ?', [String(value), key]);
+      } else {
+        db.run('INSERT INTO settings (key, value) VALUES (?, ?)', [key, String(value)]);
+      }
+    }
+  }
+
+  saveDatabase();
+  res.json({ success: true, message: 'Pengaturan berhasil disimpan.' });
+});
+
+// Get next SPPD number
+app.get('/api/sppd/next-number', (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ success: false, message: 'Belum login.' });
+  }
+  const nextNumber = generateNextNomorSurat();
+  res.json({ success: true, nomor: nextNumber });
 });
 
 // ============================================================

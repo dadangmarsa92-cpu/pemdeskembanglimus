@@ -95,6 +95,14 @@ function navigateTo(page) {
   if (pageTitle && pageTitles[page]) {
     pageTitle.textContent = pageTitles[page];
   }
+
+  // Page-specific init
+  if (page === 'pengaturan') {
+    if (typeof initSettings === 'function') initSettings();
+  }
+  if (page === 'sppd') {
+    if (typeof loadNextNomorSurat === 'function') loadNextNomorSurat();
+  }
 }
 
 // ── Check Session ──

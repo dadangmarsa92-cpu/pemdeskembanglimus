@@ -23,9 +23,10 @@ function initSppdForm() {
     await saveSppd();
   });
 
-  // Cancel button
+  // Cancel button - reset and refresh nomor surat
   btnCancel.addEventListener('click', () => {
     form.reset();
+    loadNextNomorSurat();
   });
 
   // Print modal buttons
@@ -46,6 +47,27 @@ function initSppdForm() {
       closePrintModal();
     }
   });
+
+  // Load auto-generated nomor surat on init
+  loadNextNomorSurat();
+}
+
+// ── Load Next Nomor Surat (auto) ──
+async function loadNextNomorSurat() {
+  try {
+    const res = await fetch('/api/sppd/next-number');
+    if (!res.ok) return;
+    const result = await res.json();
+    if (result.success) {
+      const nomorField = document.getElementById('sppdNomor');
+      if (nomorField) {
+        nomorField.value = result.nomor;
+        nomorField.setAttribute('data-auto', result.nomor);
+      }
+    }
+  } catch (err) {
+    console.warn('Gagal memuat nomor surat otomatis:', err);
+  }
 }
 
 // ── Save SPPD ──
@@ -82,6 +104,8 @@ async function saveSppd() {
     if (result.success) {
       lastSavedId = result.id;
       document.getElementById('sppdForm').reset();
+      // Load next auto number after save
+      await loadNextNomorSurat();
       loadSppdData();
       loadStats();
       openPrintModal();
@@ -171,6 +195,8 @@ async function deleteSppd(id) {
       showToast('Data SPPD berhasil dihapus.', 'success');
       loadSppdData();
       loadStats();
+      // Refresh nomor surat after delete
+      loadNextNomorSurat();
     } else {
       showToast(result.message, 'error');
     }

@@ -223,10 +223,14 @@
             <form id="sppdForm" autocomplete="off">
               <div class="form-row">
                 <div class="form-group">
-                  <label for="sppdNomor">Nomor Surat</label>
+                  <label for="sppdNomor">
+                    Nomor Surat
+                    <span class="nomor-auto-badge">🔄 Otomatis</span>
+                  </label>
                   <div class="input-wrapper">
-                    <input type="text" id="sppdNomor" class="form-input" placeholder="Contoh: 045/001/2026" required style="padding-left:16px;">
+                    <input type="text" id="sppdNomor" class="form-input" placeholder="Memuat..." required style="padding-left:16px; font-weight:600; letter-spacing:0.5px;">
                   </div>
+                  <small class="field-note">Nomor surat digenerate otomatis. Anda dapat mengubahnya secara manual jika diperlukan.</small>
                 </div>
                 <div class="form-group">
                   <label for="sppdNama">Nama Pegawai Yang Diperintah</label>
@@ -421,13 +425,11 @@
           <div class="page-header-section">
             <div>
               <h1>⚙️ Pengaturan</h1>
-              <p>Konfigurasi sistem dan akun</p>
+              <p>Konfigurasi sistem — kode surat, data desa, dan identitas dokumen</p>
             </div>
           </div>
-          <div class="empty-state">
-            <div class="empty-icon">⚙️</div>
-            <h3>Pengaturan Sistem</h3>
-            <p>Fitur pengaturan akan segera tersedia.</p>
+          <div id="settingsContent">
+            <div style="text-align:center;padding:60px;color:var(--text-muted);">Memuat pengaturan...</div>
           </div>
         </div>
 
@@ -444,5 +446,6 @@
 
   <script src="js/dashboard.js"></script>
   <script src="js/sppd.js"></script>
+  <script src="js/settings.js"></script>
 </body>
 </html>
