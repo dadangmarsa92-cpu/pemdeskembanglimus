@@ -50,9 +50,26 @@ async function initDatabase() {
       lama_perjalanan TEXT NOT NULL,
       tanggal_berangkat TEXT NOT NULL,
       tanggal_kembali TEXT NOT NULL,
+      dasar_surat TEXT,
+      nomor_surat_dasar TEXT,
+      nominal_rupiah TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  // Migration: Add columns to existing sppd table
+  try {
+    db.run("ALTER TABLE sppd ADD COLUMN dasar_surat TEXT");
+    console.log('📝 Added column: dasar_surat');
+  } catch(e) {}
+  try {
+    db.run("ALTER TABLE sppd ADD COLUMN nomor_surat_dasar TEXT");
+    console.log('📝 Added column: nomor_surat_dasar');
+  } catch(e) {}
+  try {
+    db.run("ALTER TABLE sppd ADD COLUMN nominal_rupiah TEXT");
+    console.log('📝 Added column: nominal_rupiah');
+  } catch(e) {}
 
   // Create settings table
   db.run(`
@@ -296,15 +313,15 @@ app.post('/api/sppd', (req, res) => {
     return res.status(401).json({ success: false, message: 'Belum login.' });
   }
 
-  const { nomor_surat, nama_pegawai, jabatan, acara, kendaraan, tujuan, lama_perjalanan, tanggal_berangkat, tanggal_kembali } = req.body;
+  const { nomor_surat, nama_pegawai, jabatan, acara, kendaraan, tujuan, lama_perjalanan, tanggal_berangkat, tanggal_kembali, dasar_surat, nomor_surat_dasar, nominal_rupiah } = req.body;
 
   if (!nomor_surat || !nama_pegawai || !jabatan || !acara || !kendaraan || !tujuan || !lama_perjalanan || !tanggal_berangkat || !tanggal_kembali) {
     return res.status(400).json({ success: false, message: 'Semua field wajib diisi.' });
   }
 
   db.run(
-    `INSERT INTO sppd (nomor_surat, nama_pegawai, jabatan, acara, kendaraan, tujuan, lama_perjalanan, tanggal_berangkat, tanggal_kembali) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [nomor_surat, nama_pegawai, jabatan, acara, kendaraan, tujuan, lama_perjalanan, tanggal_berangkat, tanggal_kembali]
+    `INSERT INTO sppd (nomor_surat, nama_pegawai, jabatan, acara, kendaraan, tujuan, lama_perjalanan, tanggal_berangkat, tanggal_kembali, dasar_surat, nomor_surat_dasar, nominal_rupiah) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [nomor_surat, nama_pegawai, jabatan, acara, kendaraan, tujuan, lama_perjalanan, tanggal_berangkat, tanggal_kembali, dasar_surat, nomor_surat_dasar, nominal_rupiah]
   );
   saveDatabase();
 
@@ -376,7 +393,7 @@ app.put('/api/sppd/:id', (req, res) => {
     return res.status(401).json({ success: false, message: 'Belum login.' });
   }
 
-  const { nomor_surat, nama_pegawai, jabatan, acara, kendaraan, tujuan, lama_perjalanan, tanggal_berangkat, tanggal_kembali } = req.body;
+  const { nomor_surat, nama_pegawai, jabatan, acara, kendaraan, tujuan, lama_perjalanan, tanggal_berangkat, tanggal_kembali, dasar_surat, nomor_surat_dasar, nominal_rupiah } = req.body;
 
   if (!nomor_surat || !nama_pegawai || !jabatan || !acara || !kendaraan || !tujuan || !lama_perjalanan || !tanggal_berangkat || !tanggal_kembali) {
     return res.status(400).json({ success: false, message: 'Semua field wajib diisi.' });
@@ -389,8 +406,8 @@ app.put('/api/sppd/:id', (req, res) => {
   }
 
   db.run(
-    `UPDATE sppd SET nomor_surat=?, nama_pegawai=?, jabatan=?, acara=?, kendaraan=?, tujuan=?, lama_perjalanan=?, tanggal_berangkat=?, tanggal_kembali=? WHERE id=?`,
-    [nomor_surat, nama_pegawai, jabatan, acara, kendaraan, tujuan, lama_perjalanan, tanggal_berangkat, tanggal_kembali, parseInt(req.params.id)]
+    `UPDATE sppd SET nomor_surat=?, nama_pegawai=?, jabatan=?, acara=?, kendaraan=?, tujuan=?, lama_perjalanan=?, tanggal_berangkat=?, tanggal_kembali=?, dasar_surat=?, nomor_surat_dasar=?, nominal_rupiah=? WHERE id=?`,
+    [nomor_surat, nama_pegawai, jabatan, acara, kendaraan, tujuan, lama_perjalanan, tanggal_berangkat, tanggal_kembali, dasar_surat, nomor_surat_dasar, nominal_rupiah, parseInt(req.params.id)]
   );
   saveDatabase();
 

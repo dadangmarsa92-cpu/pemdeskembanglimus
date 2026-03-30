@@ -3,12 +3,12 @@
 // ============================================================
 
 let currentSettings = {};
+let currentSettingsTab = 'umum';
 
 // ── Init: dipanggil saat halaman Pengaturan aktif ──
 async function initSettings() {
   await loadSettings();
   renderSettingsUI();
-  bindSettingsEvents();
 }
 
 // ── Load settings dari server ──
@@ -32,206 +32,132 @@ function renderSettingsUI() {
   const s = currentSettings;
   const isSuperUser = (document.getElementById('sidebarRole')?.textContent || '').includes('SuperUser');
 
-  const previewNomor = `${s.kode_surat || '096'}/001/${s.kode_desa || '18'}/${s.tahun || new Date().getFullYear()}`;
-  const previewNomor2 = `${s.kode_surat || '096'}/002/${s.kode_desa || '18'}/${s.tahun || new Date().getFullYear()}`;
+  // Update Active Tab Class
+  const tabButtons = document.querySelectorAll('.tab-btn');
+  tabButtons.forEach(btn => {
+    if (btn.getAttribute('data-tab') === currentSettingsTab) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+    // Bind click event once
+    if (!btn.onclick) {
+      btn.onclick = () => {
+        currentSettingsTab = btn.getAttribute('data-tab');
+        renderSettingsUI();
+      };
+    }
+  });
 
-  container.innerHTML = `
-    <!-- Preview Nomor Surat -->
-    <div class="settings-preview-card">
-      <div class="settings-preview-label">📄 Contoh Format Nomor Surat SPPD</div>
-      <div class="settings-preview-number">${previewNomor}</div>
-      <div class="settings-preview-number secondary">${previewNomor2}</div>
-      <div class="settings-preview-desc">
-        <span class="badge-code">${s.kode_surat || '096'}</span> = Kode Surat &nbsp;·&nbsp;
-        <span class="badge-code">001</span> = Urutan Otomatis &nbsp;·&nbsp;
-        <span class="badge-code">${s.kode_desa || '18'}</span> = Kode Desa &nbsp;·&nbsp;
-        <span class="badge-code">${s.tahun || new Date().getFullYear()}</span> = Tahun
-      </div>
-    </div>
+  let contentHtml = '';
 
-    <!-- Form Kode Surat -->
-    <div class="settings-group">
-      <div class="settings-group-header">
-        <span class="settings-group-icon">🔢</span>
-        <div>
-          <h3>Kode Penomoran Surat</h3>
-          <p>Konfigurasi kode yang digunakan untuk format nomor surat otomatis</p>
+  if (currentSettingsTab === 'umum') {
+    contentHtml = `
+      <div class="settings-group">
+        <div class="settings-group-title">🏛️ Identitas Desa</div>
+        <div class="settings-grid">
+          <div class="form-group">
+            <label for="set_nama_desa">Nama Desa</label>
+            <input type="text" id="set_nama_desa" class="form-input" value="${s.nama_desa || ''}" ${!isSuperUser ? 'disabled' : ''}>
+          </div>
+          <div class="form-group">
+            <label for="set_nama_kecamatan">Nama Kecamatan</label>
+            <input type="text" id="set_nama_kecamatan" class="form-input" value="${s.nama_kecamatan || ''}" ${!isSuperUser ? 'disabled' : ''}>
+          </div>
+          <div class="form-group">
+            <label for="set_nama_kabupaten">Nama Kabupaten</label>
+            <input type="text" id="set_nama_kabupaten" class="form-input" value="${s.nama_kabupaten || ''}" ${!isSuperUser ? 'disabled' : ''}>
+          </div>
+          <div class="form-group">
+            <label for="set_kepala_desa">Nama Kepala Desa</label>
+            <input type="text" id="set_kepala_desa" class="form-input" value="${s.kepala_desa || ''}" ${!isSuperUser ? 'disabled' : ''}>
+          </div>
         </div>
       </div>
-      <div class="settings-fields">
-        <div class="settings-field">
-          <label for="set_kode_surat">
-            Kode Surat
-            <span class="field-hint">Angka prefiks surat (contoh: 096)</span>
-          </label>
-          <input type="text" id="set_kode_surat" class="form-input settings-input"
-            value="${s.kode_surat || '096'}" placeholder="096" maxlength="10"
-            ${!isSuperUser ? 'disabled' : ''}>
+    `;
+  } else if (currentSettingsTab === 'sppd') {
+    const previewNomor = `${s.kode_surat || '096'}/001/${s.kode_desa || '18'}/${s.tahun || new Date().getFullYear()}`;
+    contentHtml = `
+      <div class="settings-group">
+        <div class="settings-group-title">🔢 Penomoran SPPD</div>
+        <div class="settings-grid">
+          <div class="form-group">
+            <label for="set_kode_surat">Kode Surat</label>
+            <input type="text" id="set_kode_surat" class="form-input" value="${s.kode_surat || ''}" ${!isSuperUser ? 'disabled' : ''}>
+          </div>
+          <div class="form-group">
+            <label for="set_kode_desa">Kode Desa</label>
+            <input type="text" id="set_kode_desa" class="form-input" value="${s.kode_desa || ''}" ${!isSuperUser ? 'disabled' : ''}>
+          </div>
+          <div class="form-group">
+            <label for="set_tahun">Tahun Berjalan</label>
+            <input type="number" id="set_tahun" class="form-input" value="${s.tahun || ''}" ${!isSuperUser ? 'disabled' : ''}>
+          </div>
         </div>
-        <div class="settings-field">
-          <label for="set_kode_desa">
-            Kode Desa
-            <span class="field-hint">Kode identitas desa (contoh: 18)</span>
-          </label>
-          <input type="text" id="set_kode_desa" class="form-input settings-input"
-            value="${s.kode_desa || '18'}" placeholder="18" maxlength="10"
-            ${!isSuperUser ? 'disabled' : ''}>
-        </div>
-        <div class="settings-field">
-          <label for="set_tahun">
-            Tahun Aktif
-            <span class="field-hint">Tahun penomoran surat berjalan</span>
-          </label>
-          <input type="number" id="set_tahun" class="form-input settings-input"
-            value="${s.tahun || new Date().getFullYear()}" placeholder="${new Date().getFullYear()}" min="2020" max="2099"
-            ${!isSuperUser ? 'disabled' : ''}>
+        <div style="margin-top:20px; padding:15px; background:rgba(255,255,255,0.05); border-radius:8px;">
+          <small style="color:var(--text-muted); display:block; margin-bottom:5px;">Preview Format Nomor Surat :</small>
+          <strong style="color:var(--accent); font-size:1.1rem; letter-spacing:1px;">${previewNomor}</strong>
         </div>
       </div>
-    </div>
+    `;
+  } else {
+    contentHtml = `
+      <div class="empty-state" style="padding: 60px 20px;">
+        <div class="empty-icon">📁</div>
+        <h3>Pengaturan ${currentSettingsTab.toUpperCase()}</h3>
+        <p>Halaman pengaturan untuk modul ini akan segera tersedia.</p>
+      </div>
+    `;
+  }
 
-    <!-- Form Data Desa -->
-    <div class="settings-group">
-      <div class="settings-group-header">
-        <span class="settings-group-icon">🏛️</span>
-        <div>
-          <h3>Data Identitas Desa</h3>
-          <p>Informasi yang tampil pada kop surat dan dokumen cetak</p>
-        </div>
-      </div>
-      <div class="settings-fields">
-        <div class="settings-field">
-          <label for="set_nama_desa">
-            Nama Desa
-            <span class="field-hint">Nama desa (contoh: Kembanglimus)</span>
-          </label>
-          <input type="text" id="set_nama_desa" class="form-input settings-input"
-            value="${s.nama_desa || 'Kembanglimus'}" placeholder="Kembanglimus"
-            ${!isSuperUser ? 'disabled' : ''}>
-        </div>
-        <div class="settings-field">
-          <label for="set_nama_kecamatan">
-            Nama Kecamatan
-            <span class="field-hint">Nama kecamatan</span>
-          </label>
-          <input type="text" id="set_nama_kecamatan" class="form-input settings-input"
-            value="${s.nama_kecamatan || 'Borobudur'}" placeholder="Borobudur"
-            ${!isSuperUser ? 'disabled' : ''}>
-        </div>
-        <div class="settings-field">
-          <label for="set_nama_kabupaten">
-            Nama Kabupaten
-            <span class="field-hint">Nama kabupaten</span>
-          </label>
-          <input type="text" id="set_nama_kabupaten" class="form-input settings-input"
-            value="${s.nama_kabupaten || 'Magelang'}" placeholder="Magelang"
-            ${!isSuperUser ? 'disabled' : ''}>
-        </div>
-        <div class="settings-field">
-          <label for="set_kepala_desa">
-            Nama Kepala Desa
-            <span class="field-hint">Nama yang muncul pada tanda tangan surat</span>
-          </label>
-          <input type="text" id="set_kepala_desa" class="form-input settings-input"
-            value="${s.kepala_desa || 'SOETJI ARIMBI'}" placeholder="Nama Kepala Desa"
-            ${!isSuperUser ? 'disabled' : ''}>
-        </div>
-      </div>
-    </div>
-
-    ${isSuperUser ? `
-    <!-- Save Button -->
-    <div class="settings-actions">
-      <button class="btn-save" id="btnSaveSettings">
+  const actionButtons = isSuperUser ? `
+    <div class="form-actions" style="margin-top: 30px;">
+      <button type="button" class="btn-save" id="btnSaveSettings">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;vertical-align:middle;">
           <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
           <polyline points="17 21 17 13 7 13 7 21"></polyline>
           <polyline points="7 3 7 8 15 8"></polyline>
         </svg>
-        Simpan Pengaturan
+        Simpan Perubahan
       </button>
-      <button class="btn-cancel" id="btnResetSettings">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;vertical-align:middle;">
-          <polyline points="1 4 1 10 7 10"></polyline>
-          <path d="M3.51 15a9 9 0 1 0 .49-3.51"></path>
-        </svg>
-        Reset ke Default
+      <button type="button" class="btn-cancel" id="btnResetSettings">
+        Reset
       </button>
     </div>
-    ` : `
-    <div class="settings-readonly-notice">
-      🔒 Pengaturan hanya dapat diubah oleh <strong>SuperUser</strong>.
-    </div>
-    `}
-  `;
+  ` : '';
 
-  // Live preview update
-  ['set_kode_surat', 'set_kode_desa', 'set_tahun'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.addEventListener('input', updateSettingsPreview);
-  });
+  container.innerHTML = contentHtml + actionButtons;
 
   if (isSuperUser) {
-    bindSettingsEvents();
+    document.getElementById('btnSaveSettings')?.addEventListener('click', saveSettings);
+    document.getElementById('btnResetSettings')?.addEventListener('click', resetSettings);
   }
-}
-
-// ── Live Preview Update ──
-function updateSettingsPreview() {
-  const kode = document.getElementById('set_kode_surat')?.value || '096';
-  const desa = document.getElementById('set_kode_desa')?.value || '18';
-  const tahun = document.getElementById('set_tahun')?.value || new Date().getFullYear();
-
-  const previews = document.querySelectorAll('.settings-preview-number');
-  if (previews[0]) previews[0].textContent = `${kode}/001/${desa}/${tahun}`;
-  if (previews[1]) previews[1].textContent = `${kode}/002/${desa}/${tahun}`;
-
-  const badges = document.querySelectorAll('.badge-code');
-  if (badges[0]) badges[0].textContent = kode;
-  if (badges[2]) badges[2].textContent = desa;
-  if (badges[3]) badges[3].textContent = tahun;
-
-  const desc = document.querySelector('.settings-preview-desc');
-  if (desc) {
-    desc.innerHTML = `
-      <span class="badge-code">${kode}</span> = Kode Surat &nbsp;·&nbsp;
-      <span class="badge-code">001</span> = Urutan Otomatis &nbsp;·&nbsp;
-      <span class="badge-code">${desa}</span> = Kode Desa &nbsp;·&nbsp;
-      <span class="badge-code">${tahun}</span> = Tahun
-    `;
-  }
-}
-
-// ── Bind Events ──
-function bindSettingsEvents() {
-  setTimeout(() => {
-    const btnSave = document.getElementById('btnSaveSettings');
-    const btnReset = document.getElementById('btnResetSettings');
-    if (btnSave) btnSave.addEventListener('click', saveSettings);
-    if (btnReset) btnReset.addEventListener('click', resetSettings);
-  }, 100);
 }
 
 // ── Save Settings ──
 async function saveSettings() {
-  const payload = {
-    kode_surat: document.getElementById('set_kode_surat')?.value.trim(),
-    kode_desa: document.getElementById('set_kode_desa')?.value.trim(),
-    tahun: document.getElementById('set_tahun')?.value.trim(),
-    nama_desa: document.getElementById('set_nama_desa')?.value.trim(),
-    nama_kecamatan: document.getElementById('set_nama_kecamatan')?.value.trim(),
-    nama_kabupaten: document.getElementById('set_nama_kabupaten')?.value.trim(),
-    kepala_desa: document.getElementById('set_kepala_desa')?.value.trim(),
+  const payload = { ...currentSettings };
+  
+  // Collect values only from visible inputs (to avoid overwriting absent fields in current tab)
+  const inputs = {
+    kode_surat: 'set_kode_surat',
+    kode_desa: 'set_kode_desa',
+    tahun: 'set_tahun',
+    nama_desa: 'set_nama_desa',
+    nama_kecamatan: 'set_nama_kecamatan',
+    nama_kabupaten: 'set_nama_kabupaten',
+    kepala_desa: 'set_kepala_desa'
   };
 
-  // Validasi kode_surat
-  if (!payload.kode_surat || !payload.kode_desa || !payload.tahun) {
-    showToast('Kode surat, kode desa, dan tahun wajib diisi.', 'error');
-    return;
+  for (const [key, id] of Object.entries(inputs)) {
+    const el = document.getElementById(id);
+    if (el) payload[key] = el.value.trim();
   }
 
   try {
     const btn = document.getElementById('btnSaveSettings');
-    if (btn) { btn.disabled = true; btn.textContent = 'Menyimpan...'; }
+    btn.disabled = true;
+    btn.textContent = 'Menyimpan...';
 
     const res = await fetch('/api/settings', {
       method: 'PUT',
@@ -241,36 +167,25 @@ async function saveSettings() {
     const result = await res.json();
 
     if (result.success) {
-      currentSettings = { ...currentSettings, ...payload };
+      currentSettings = payload;
       showToast('✅ Pengaturan berhasil disimpan!', 'success');
-      // Refresh nomor surat di form SPPD jika sedang aktif
-      if (typeof loadNextNomorSurat === 'function') {
-        loadNextNomorSurat();
-      }
+      renderSettingsUI();
+      if (typeof loadNextNomorSurat === 'function') loadNextNomorSurat();
     } else {
-      showToast(result.message || 'Gagal menyimpan pengaturan.', 'error');
+      showToast(result.message, 'error');
     }
   } catch (err) {
-    showToast('Terjadi kesalahan koneksi.', 'error');
+    showToast('Gagal menghubungkan ke server.', 'error');
   } finally {
     const btn = document.getElementById('btnSaveSettings');
-    if (btn) {
-      btn.disabled = false;
-      btn.innerHTML = `
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;vertical-align:middle;">
-          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-          <polyline points="17 21 17 13 7 13 7 21"></polyline>
-          <polyline points="7 3 7 8 15 8"></polyline>
-        </svg>
-        Simpan Pengaturan`;
-    }
+    if (btn) btn.disabled = false;
   }
 }
 
 // ── Reset to Default ──
 async function resetSettings() {
-  if (!confirm('Reset semua pengaturan ke nilai default?')) return;
-
+  if (!confirm('Yakin ingin mereset pengaturan ke default?')) return;
+  
   const defaults = {
     kode_surat: '096',
     kode_desa: '18',
@@ -287,13 +202,12 @@ async function resetSettings() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(defaults)
     });
-    const result = await res.json();
-    if (result.success) {
+    if ((await res.json()).success) {
       currentSettings = defaults;
+      showToast('Pengaturan direset.', 'success');
       renderSettingsUI();
-      showToast('Pengaturan direset ke default.', 'success');
     }
-  } catch (err) {
-    showToast('Gagal mereset pengaturan.', 'error');
+  } catch {
+    showToast('Gagal mereset.', 'error');
   }
 }

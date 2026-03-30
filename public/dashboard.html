@@ -224,8 +224,23 @@
             <form id="sppdForm" autocomplete="off">
               <div class="form-row">
                 <div class="form-group">
+                  <label for="sppdDasar">Dasar Surat</label>
+                  <div class="input-wrapper">
+                    <input type="text" id="sppdDasar" class="form-input" placeholder="Contoh: Surat Tugas / Undangan" required style="padding-left:16px;">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="sppdNomorDasar">Nomor Surat Dasar</label>
+                  <div class="input-wrapper">
+                    <input type="text" id="sppdNomorDasar" class="form-input" placeholder="Contoh: 001/V/2026" required style="padding-left:16px;">
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
                   <label for="sppdNomor">
-                    Nomor Surat
+                    Nomor Surat SPPD
                     <span class="nomor-auto-badge">🔄 Otomatis</span>
                   </label>
                   <div class="input-wrapper">
@@ -237,6 +252,21 @@
                   <label for="sppdNama">Nama Pegawai Yang Diperintah</label>
                   <div class="input-wrapper">
                     <input type="text" id="sppdNama" class="form-input" placeholder="Masukkan nama pegawai" required style="padding-left:16px;">
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="sppdJabatan">Jabatan</label>
+                  <div class="input-wrapper">
+                    <input type="text" id="sppdJabatan" class="form-input" placeholder="Contoh: Sekretaris Desa" required style="padding-left:16px;">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="sppdNominal">Nominal (Rp)</label>
+                  <div class="input-wrapper">
+                    <input type="text" id="sppdNominal" class="form-input" placeholder="Contoh: 500.000" required style="padding-left:16px;">
                   </div>
                 </div>
               </div>
@@ -435,7 +465,15 @@
               <p>Konfigurasi sistem — kode surat, data desa, dan identitas dokumen</p>
             </div>
           </div>
-          <div id="settingsContent">
+          
+          <div class="settings-tabs">
+            <button class="tab-btn active" data-tab="umum">🏠 Umum / Desa</button>
+            <button class="tab-btn" data-tab="sppd">📋 SPPD</button>
+            <button class="tab-btn" data-tab="rab">💰 RAB</button>
+            <button class="tab-btn" data-tab="narasumber">👥 Narasumber</button>
+          </div>
+
+          <div id="settingsContent" class="settings-container">
             <div style="text-align:center;padding:60px;color:var(--text-muted);">Memuat pengaturan...</div>
           </div>
         </div>

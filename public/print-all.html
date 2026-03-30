@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cetak Semua Dokumen SPPD - Pelayanan Pemerintah Desa</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Times+New+Roman&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    @page {
+      size: A4;
+      margin: 1.5cm 2cm;
+    }
+
+    body {
+      font-family: 'Times New Roman', Times, serif;
+      font-size: 11.5pt;
+      color: #000;
+      background: #f0f0f0;
+      line-height: 1.4;
+    }
+
+    .print-btn-container {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      background: rgba(255,255,255,0.9);
+      padding: 15px 30px;
+      border-radius: 50px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+      display: flex;
+      gap: 15px;
+    }
+
+    .btn-do-print {
+      padding: 10px 24px;
+      font-size: 14px;
+      font-weight: 600;
+      background: #3949ab;
+      color: #fff;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+    }
+
+    .btn-close-print {
+      padding: 10px 24px;
+      font-size: 14px;
+      font-weight: 600;
+      background: #e0e0e0;
+      color: #333;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+    }
+
+    .all-pages-container {
+      width: 210mm;
+      margin: 80px auto 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .page-sheet {
+      width: 210mm;
+      min-height: 297mm;
+      background: #fff;
+      padding: 1.5cm 2cm;
+      box-shadow: 0 0 15px rgba(0,0,0,0.05);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Common Print styles */
+    .print-header {
+      text-align: center;
+      border-bottom: 3.5px double #000;
+      padding-bottom: 10px;
+      margin-bottom: 15px;
+      position: relative;
+    }
+    .print-header img {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 75px;
+      height: 75px;
+      object-fit: contain;
+    }
+    .print-header h1 { font-size: 14pt; font-weight: bold; margin-bottom: 2px; }
+    .print-header h2 { font-size: 13pt; font-weight: bold; margin-bottom: 2px; }
+    .print-header h3 { font-size: 15pt; font-weight: bold; text-decoration: underline; margin-bottom: 3px; }
+    .print-header .address { font-size: 10pt; font-style: italic; }
+
+    .content-title {
+      text-align: center;
+      margin: 15px 0 10px;
+    }
+    .content-title h2 { font-size: 13pt; font-weight: bold; text-decoration: underline; }
+    .content-title p { font-size: 12pt; font-weight: bold; }
+
+    table { width: 100%; border-collapse: collapse; }
+    .table-bordered td, .table-bordered th { border: 1px solid #000; padding: 5px 8px; vertical-align: top; }
+
+    .sign-section {
+      margin-top: 25px;
+      display: flex;
+      justify-content: flex-end;
+    }
+    .sign-box { text-align: center; min-width: 250px; }
+    .sign-space { height: 65px; }
+    .sign-name { font-weight: bold; text-decoration: underline; }
+
+    /* Page specific overrides */
+    .spt-header { margin-bottom: 25px; }
+    .spt-body-text { margin: 15px 0; text-align: justify; }
+    .spt-list { margin-left: 25px; margin-bottom: 15px; }
+
+    @media print {
+      body { background: #fff; }
+      .print-btn-container { display: none; }
+      .all-pages-container { margin: 0; gap: 0; width: 100%; }
+      .page-sheet { 
+        margin: 0; 
+        box-shadow: none; 
+        page-break-after: always;
+        width: 100%;
+        min-height: 100vh;
+      }
+      .page-sheet:last-child { page-break-after: avoid; }
+    }
+
+    /* Loading text */
+    #loadingOverlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+      font-size: 18px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="loadingOverlay">Memuat data dan menyiapkan dokumen...</div>
+
+  <div class="print-btn-container">
+    <button class="btn-do-print" onclick="window.print()">🖨️ Cetak Semua Halaman</button>
+    <button class="btn-close-print" onclick="window.close()">✖ Tutup</button>
+  </div>
+
+  <div class="all-pages-container" id="allPages">
+    <!-- Pages will be injected here -->
+  </div>
+
+  <script>
+    const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+    function formatDate(dateStr) {
+      if (!dateStr) return '-';
+      const d = new Date(dateStr);
+      return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+    }
+
+    function getDayName(dateStr) {
+      if (!dateStr) return '-';
+      const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+      const d = new Date(dateStr);
+      return days[d.getDay()];
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get('id');
+
+      if (!id) {
+        document.getElementById('loadingOverlay').textContent = 'ID SPPD tidak ditemukan.';
+        return;
+      }
+
+      try {
+        const [resSppd, resSettings] = await Promise.all([
+          fetch(`/api/sppd/${id}`),
+          fetch('/api/settings')
+        ]);
+        
+        const data = (await resSppd.json()).data;
+        const set = (await resSettings.json()).settings;
+
+        renderAllPages(data, set);
+        document.getElementById('loadingOverlay').style.display = 'none';
+      } catch (error) {
+        document.getElementById('loadingOverlay').textContent = 'Gagal memuat data.';
+      }
+    });
+
+    function renderAllPages(data, set) {
+      const container = document.getElementById('allPages');
+      const todayStr = formatDate(new Date());
+
+      // ────────────────────────────────────────────────────────────
+      // HALAMAN 1: SPPD DEPAN
+      // ────────────────────────────────────────────────────────────
+      const page1 = `
+        <div class="page-sheet">
+          <div class="print-header">
+            <img src="assets/logo.png" alt="Logo">
+            <h1>PEMERINTAH KABUPATEN ${set.nama_kabupaten.toUpperCase()}</h1>
+            <h2>KECAMATAN ${set.nama_kecamatan.toUpperCase()}</h2>
+            <h3>DESA ${set.nama_desa.toUpperCase()}</h3>
+            <div class="address">Jl. Sudirman KM. 03, Kembanglimus, Borobudur Kode Pos : 56553<br>Telp : (0293) 7182286 E-Mail : desakembanglimus1@gmail.com</div>
+          </div>
+          <div style="text-align: right; margin-bottom: 10px;">
+            <table style="width: auto; margin-left: auto;">
+              <tr><td>Lembar Ke</td><td>:</td><td style="width: 50px;"></td></tr>
+              <tr><td>Kode No.</td><td>:</td><td></td></tr>
+              <tr><td>Nomor</td><td>:</td><td><strong>${data.nomor_surat}</strong></td></tr>
+            </table>
+          </div>
+          <div class="content-title">
+            <h2>SURAT PERINTAH PERJALANAN DINAS</h2>
+            <p>(SPPD)</p>
+          </div>
+          <table class="table-bordered">
+            <tr><td style="width: 35px; text-align: center;">1.</td><td style="width: 42%;">Pejabat Yang Memberi Perintah</td><td>Kepala Desa ${set.nama_desa}</td></tr>
+            <tr><td style="text-align: center;">2.</td><td>Nama Pegawai Yang Diperintah</td><td><strong>${data.nama_pegawai}</strong></td></tr>
+            <tr><td style="text-align: center;" rowspan="3">3.</td><td>a. Pangkat/Golongan</td><td>-</td></tr>
+            <tr><td>b. NIP.</td><td>-</td></tr>
+            <tr><td>c. Jabatan</td><td>${data.jabatan}</td></tr>
+            <tr><td style="text-align: center;">4.</td><td>Maksud perjalanan Dinas</td><td>${data.acara}</td></tr>
+            <tr><td style="text-align: center;">5.</td><td>Kendaraan yang Dipergunakan</td><td>${data.kendaraan}</td></tr>
+            <tr><td style="text-align: center;" rowspan="2">6.</td><td>a. Tempat Berangkat</td><td>Desa ${set.nama_desa}</td></tr>
+            <tr><td>b. Tempat Tujuan</td><td>${data.tujuan}</td></tr>
+            <tr><td style="text-align: center;" rowspan="3">7.</td><td>a. Lamanya Perjalanan Dinas</td><td>${data.lama_perjalanan}</td></tr>
+            <tr><td>b. Tanggal Berangkat</td><td>${formatDate(data.tanggal_berangkat)}</td></tr>
+            <tr><td>c. Tanggal Kembali</td><td>${formatDate(data.tanggal_kembali)}</td></tr>
+            <tr><td style="text-align: center;" rowspan="3">8.</td><td>Pembebanan Anggaran</td><td></td></tr>
+            <tr><td style="padding-left: 25px;">a. Instansi</td><td>Pemerintah Desa ${set.nama_desa}</td></tr>
+            <tr><td style="padding-left: 25px;">b. Mata Anggaran</td><td>${data.nominal_rupiah ? 'Dana Desa' : '-'}</td></tr>
+            <tr><td style="text-align: center;">9.</td><td>Keterangan Lain-Lain</td><td>-</td></tr>
+          </table>
+          <div class="sign-section">
+            <div class="sign-box">
+              <p>Dikeluarkan di : Desa ${set.nama_desa}</p>
+              <p>Pada Tanggal : ${formatDate(data.tanggal_berangkat)}</p>
+              <p style="margin-top: 5px; font-weight: bold;">Kepala Desa ${set.nama_desa}</p>
+              <div class="sign-space"></div>
+              <p class="sign-name">${set.kepala_desa}</p>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // ────────────────────────────────────────────────────────────
+      // HALAMAN 2: SPPD BELAKANG
+      // ────────────────────────────────────────────────────────────
+      const page2 = `
+        <div class="page-sheet">
+          <table style="width: 100%; border: none;">
+            <tr>
+              <td style="width: 50%; border: none;"></td>
+              <td style="width: 50%; border: none; padding-left: 20px;">
+                <table style="margin-bottom: 10px;">
+                  <tr><td style="width: 120px;">SPPD No.</td><td>:</td><td>${data.nomor_surat}</td></tr>
+                  <tr><td>Berangkat Dari</td><td>:</td><td>Desa ${set.nama_desa}</td></tr>
+                  <tr><td>Pada Tanggal</td><td>:</td><td>${formatDate(data.tanggal_berangkat)}</td></tr>
+                  <tr><td>Ke</td><td>:</td><td>${data.tujuan}</td></tr>
+                </table>
+                <p style="margin-bottom: 40px; text-align: center;">Pejabat Yang Memberi Perintah</p>
+                <div style="height: 60px;"></div>
+                <p style="text-align: center; font-weight: bold; text-decoration: underline;">${set.kepala_desa}</p>
+              </td>
+            </tr>
+          </table>
+          
+          <table class="table-bordered" style="margin-top: 20px;">
+            <tr>
+              <td style="width: 50%; height: 120px;">
+                II. Tiba di : ${data.tujuan}<br>
+                Pada Tanggal : ${formatDate(data.tanggal_berangkat)}<br>
+                Kepala : <br>
+                <div style="height: 40px;"></div>
+                ( ........................................... )
+              </td>
+              <td style="width: 50%;">
+                Berangkat Dari : ${data.tujuan}<br>
+                Ke : Desa ${set.nama_desa}<br>
+                Pada Tanggal : ${formatDate(data.tanggal_kembali)}<br>
+                Kepala : <br>
+                <div style="height: 40px;"></div>
+                ( ........................................... )
+              </td>
+            </tr>
+            <tr>
+              <td style="height: 120px;">
+                III. Tiba di : <br>
+                Pada Tanggal : <br>
+                Kepala : <br>
+                <div style="height: 40px;"></div>
+                ( ........................................... )
+              </td>
+              <td>
+                Berangkat Dari : <br>
+                Ke : <br>
+                Pada Tanggal : <br>
+                Kepala : <br>
+                <div style="height: 40px;"></div>
+                ( ........................................... )
+              </td>
+            </tr>
+            <tr>
+              <td colspan="2" style="height: 100px;">
+                IV. Tiba Kembali di : Desa ${set.nama_desa}<br>
+                Pada Tanggal : ${formatDate(data.tanggal_kembali)}<br><br>
+                Telah diperiksa, dengan keterangan bahwa perjalanan tersebut di atas benar dilakukan atas perintahnya dan semata-mata untuk kepentingan jabatan dalam waktu yang sesingkat-singkatnya.<br>
+                <div class="sign-section" style="margin-top: 10px;">
+                  <div class="sign-box">
+                    <p style="font-weight: bold;">Kepala Desa ${set.nama_desa}</p>
+                    <div class="sign-space" style="height: 40px;"></div>
+                    <p class="sign-name">${set.kepala_desa}</p>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </table>
+          <div style="margin-top: 15px; font-size: 9pt;">
+            <p>V. CATATAN LAIN - LAIN</p>
+            <p>VI. PERHATIAN</p>
+            <p style="text-align: justify; padding-left: 20px;">Pejabat yang berwenang menerbitkan SPPD, pegawai yang melakukan perjalanan dinas, para pejabat yang mengesahkan tanggal berangkat/tiba serta bendaharawan bertanggung jawab berdasarkan peraturan-peraturan keuangan negara, bila Negara mendapat rugi akibat kesalahan, kealpaannya.</p>
+          </div>
+        </div>
+      `;
+
+      // ────────────────────────────────────────────────────────────
+      // HALAMAN 3: LAPORAN PERJALANAN DINAS
+      // ────────────────────────────────────────────────────────────
+      const page3 = `
+        <div class="page-sheet">
+          <div class="print-header">
+            <img src="assets/logo.png" alt="Logo">
+            <h1>PEMERINTAH KABUPATEN ${set.nama_kabupaten.toUpperCase()}</h1>
+            <h2>KECAMATAN ${set.nama_kecamatan.toUpperCase()}</h2>
+            <h3>DESA ${set.nama_desa.toUpperCase()}</h3>
+            <div class="address">Jl. Sudirman KM. 03, Kembanglimus, Borobudur Kode Pos : 56553</div>
+          </div>
+          <div class="content-title" style="margin-bottom: 30px;">
+            <h2 style="font-size: 14pt;">LAPORAN PERJALANAN DINAS</h2>
+          </div>
+          
+          <table style="margin-bottom: 20px;">
+            <tr><td style="width: 100px;">Kepada Yth.</td><td>:</td><td>Kepala Desa ${set.nama_desa}</td></tr>
+            <tr><td>Perihal</td><td>:</td><td>Laporan Pelaksanaan Perjalanan Dinas</td></tr>
+            <tr><td>Dari</td><td>:</td><td>${data.nama_pegawai}</td></tr>
+            <tr><td>Tanggal</td><td>:</td><td>${formatDate(data.tanggal_kembali)}</td></tr>
+          </table>
+
+          <p style="margin-bottom: 10px;">Yang bertandatangan di bawah ini :</p>
+          <table style="margin-bottom: 20px; margin-left: 20px; width: calc(100% - 20px);">
+            <tr><td style="width: 150px;">a. Nama</td><td>:</td><td><strong>${data.nama_pegawai}</strong></td></tr>
+            <tr><td>b. NIP</td><td>:</td><td>-</td></tr>
+            <tr><td>c. Pangkat/Gol. Ruang</td><td>:</td><td>-</td></tr>
+            <tr><td>d. Jabatan</td><td>:</td><td>${data.jabatan}</td></tr>
+          </table>
+
+          <p style="margin-bottom: 15px;">Telah melakukan perjalanan dinas pada :</p>
+          <table style="margin-bottom: 25px; margin-left: 20px; width: calc(100% - 20px);">
+            <tr><td style="width: 150px;">a. Hari</td><td>:</td><td>${getDayName(data.tanggal_berangkat)} - ${getDayName(data.tanggal_kembali)}</td></tr>
+            <tr><td>b. Tanggal</td><td>:</td><td>${formatDate(data.tanggal_berangkat)} s/d ${formatDate(data.tanggal_kembali)}</td></tr>
+            <tr><td>c. Tempat yang dituju</td><td>:</td><td>${data.tujuan}</td></tr>
+            <tr><td>d. Keperluan</td><td>:</td><td>${data.acara}</td></tr>
+            <tr><td>e. Surat Perintah No.</td><td>:</td><td>${data.nomor_surat}</td></tr>
+          </table>
+
+          <p style="margin-bottom: 10px; font-weight: bold;">KESIMPULAN :</p>
+          <div style="border-bottom: 1px dashed #000; height: 30px; margin-bottom: 15px;"></div>
+          <div style="border-bottom: 1px dashed #000; height: 30px; margin-bottom: 40px;"></div>
+
+          <p style="text-align: justify; margin-bottom: 30px;">Demikian laporan perjalanan dinas ini saya buat untuk dipergunakan sebagaimana mestinya.</p>
+          
+          <div class="sign-section">
+            <div class="sign-box">
+              <p>Yang Membuat Laporan</p>
+              <div class="sign-space"></div>
+              <p class="sign-name">${data.nama_pegawai}</p>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // ────────────────────────────────────────────────────────────
+      // HALAMAN 4: DAFTAR NOMINATIF
+      // ────────────────────────────────────────────────────────────
+      const page4 = `
+        <div class="page-sheet">
+          <div style="text-align: center; margin-bottom: 15px;">
+            <p style="font-weight: bold; margin-bottom: 5px;">SESUAI SURAT TUGAS NOMOR : ${data.nomor_surat}</p>
+            <p style="font-weight: bold; text-decoration: underline;">DAFTAR NOMINATIF PEMBAYARAN PERJALANAN DINAS</p>
+            <p style="font-weight: bold;">DESA ${set.nama_desa.toUpperCase()} KECAMATAN ${set.nama_kecamatan.toUpperCase()} KABUPATEN ${set.nama_kabupaten.toUpperCase()}</p>
+          </div>
+
+          <table class="table-bordered" style="text-align: center; font-size: 10pt;">
+            <thead>
+              <tr style="background: #fdfdfd;">
+                <th style="width: 40px;" rowspan="2">NO</th>
+                <th style="width: 150px;" rowspan="2">NAMA</th>
+                <th style="width: 50px;" rowspan="2">GOL</th>
+                <th rowspan="2">TUJUAN</th>
+                <th style="width: 120px;" colspan="2">LAMA PERJALANAN DINAS</th>
+                <th colspan="2">BIAYA PERJALANAN DINAS</th>
+                <th style="width: 100px;" rowspan="2">JUMLAH</th>
+                <th style="width: 100px;" rowspan="2">TANDA TANGAN</th>
+              </tr>
+              <tr>
+                <th>LAMA</th>
+                <th>TANGGAL</th>
+                <th>JUMLAH</th>
+                <th>PPH</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="height: 60px;">
+                <td>1.</td>
+                <td style="text-align: left;">${data.nama_pegawai}</td>
+                <td>-</td>
+                <td>${data.tujuan}</td>
+                <td>${data.lama_perjalanan.split(' ')[0]} HARI</td>
+                <td style="font-size: 9pt;">${formatDate(data.tanggal_berangkat)} s/d ${formatDate(data.tanggal_kembali)}</td>
+                <td>Rp. ${data.nominal_rupiah || '0'}</td>
+                <td>Rp. 0</td>
+                <td>Rp. ${data.nominal_rupiah || '0'}</td>
+                <td></td>
+              </tr>
+              <tr style="height: 60px;"><td>2.</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+              <tr style="font-weight: bold;">
+                <td colspan="6">JUMLAH</td>
+                <td>Rp. ${data.nominal_rupiah || '0'}</td>
+                <td>Rp. 0</td>
+                <td>Rp. ${data.nominal_rupiah || '0'}</td>
+                <td></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="sign-section" style="margin-top: 30px;">
+            <div class="sign-box">
+              <p>Desa ${set.nama_desa}, ${todayStr}</p>
+              <div style="height: 50px;"></div>
+              <p class="sign-name">${set.kepala_desa}</p>
+              <p>Kepala Desa ${set.nama_desa}</p>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // ────────────────────────────────────────────────────────────
+      // HALAMAN 5: SURAT PERINTAH TUGAS (SPT)
+      // ────────────────────────────────────────────────────────────
+      const page5 = `
+        <div class="page-sheet">
+          <div class="print-header spt-header">
+            <img src="assets/logo.png" alt="Logo">
+            <h1>PEMERINTAH KABUPATEN ${set.nama_kabupaten.toUpperCase()}</h1>
+            <h2>KECAMATAN ${set.nama_kecamatan.toUpperCase()}</h2>
+            <h3>DESA ${set.nama_desa.toUpperCase()}</h3>
+            <div class="address">Jl. Sudirman KM. 03, Kembanglimus, Borobudur Kode Pos : 56553</div>
+          </div>
+          
+          <div class="content-title" style="margin-bottom: 25px;">
+            <h2 style="font-size: 14pt;">SURAT PERINTAH TUGAS</h2>
+            <p>Nomor : ${data.nomor_surat}</p>
+          </div>
+
+          <table style="margin-bottom: 20px;">
+            <tr><td style="width: 80px;">Dasar</td><td style="width: 15px;">:</td><td>${data.dasar_surat || '-'}</td></tr>
+            <tr><td>Nomor</td><td>:</td><td>${data.nomor_surat_dasar || '-'}</td></tr>
+            <tr><td>Perihal</td><td>:</td><td>${data.acara}</td></tr>
+          </table>
+
+          <p style="text-align: center; font-weight: bold; margin-bottom: 15px;">MEMERINTAHKAN</p>
+
+          <table class="table-bordered" style="margin-bottom: 25px;">
+            <thead>
+              <tr style="text-align: center; font-weight: bold;">
+                <th style="width: 40px;">No.</th>
+                <th>Nama</th>
+                <th>Jabatan</th>
+                <th>Alamat</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="height: 40px;">
+                <td style="text-align: center;">1.</td>
+                <td><strong>${data.nama_pegawai}</strong></td>
+                <td>${data.jabatan}</td>
+                <td>${set.nama_desa.toUpperCase()}</td>
+              </tr>
+              <tr style="height: 40px;"><td>2.</td><td></td><td></td><td></td></tr>
+            </tbody>
+          </table>
+
+          <div style="margin-bottom: 25px;">
+            <p>1. Menghadiri Undangan ${data.acara}</p>
+            <p>2. Dilaksanakan Pada :</p>
+            <table style="margin-left: 25px; width: calc(100% - 25px);">
+              <tr><td style="width: 100px;">Hari</td><td>:</td><td>${getDayName(data.tanggal_berangkat)} - ${getDayName(data.tanggal_kembali)}</td></tr>
+              <tr><td>Tanggal</td><td>:</td><td>${formatDate(data.tanggal_berangkat)} s/d ${formatDate(data.tanggal_kembali)}</td></tr>
+              <tr><td>Tempat</td><td>:</td><td>${data.tujuan}</td></tr>
+            </table>
+            <p>3. Melaporkan hasilnya kepada pemberi tugas</p>
+          </div>
+
+          <p style="margin-bottom: 30px;">Demikian surat tugas ini dibuat untuk dipergunakan sebagaimana mestinya.</p>
+
+          <div class="sign-section">
+            <div class="sign-box">
+              <p>Dikeluarkan di : Desa ${set.nama_desa}</p>
+              <p>Pada Tanggal : ${formatDate(data.tanggal_berangkat)}</p>
+              <p style="margin-top: 5px; font-weight: bold;">Kepala Desa ${set.nama_desa}</p>
+              <div class="sign-space"></div>
+              <p class="sign-name">${set.kepala_desa}</p>
+            </div>
+          </div>
+        </div>
+      `;
+
+      container.innerHTML = page1 + page2 + page3 + page4 + page5;
+    }
+  </script>
+</body>
+</html>

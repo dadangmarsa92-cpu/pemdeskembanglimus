@@ -105,7 +105,7 @@ function initSppdForm() {
   // Print modal
   btnPrintYes.addEventListener('click', () => {
     closePrintModal();
-    if (lastSavedId) printSppd(lastSavedId);
+    if (lastSavedId) printSppdAll(lastSavedId);
   });
   btnPrintNo.addEventListener('click', closePrintModal);
 
@@ -170,7 +170,10 @@ async function saveSppd() {
     tujuan: document.getElementById('sppdTujuan').value.trim(),
     lama_perjalanan: lamaFormatted,
     tanggal_berangkat: document.getElementById('sppdTglBerangkat').value,
-    tanggal_kembali: document.getElementById('sppdTglKembali').value
+    tanggal_kembali: document.getElementById('sppdTglKembali').value,
+    dasar_surat: document.getElementById('sppdDasar').value.trim(),
+    nomor_surat_dasar: document.getElementById('sppdNomorDasar').value.trim(),
+    nominal_rupiah: document.getElementById('sppdNominal').value.trim()
   };
 
   for (const [, val] of Object.entries(data)) {
@@ -219,7 +222,10 @@ async function updateSppd() {
     tujuan: document.getElementById('sppdTujuan').value.trim(),
     lama_perjalanan: lamaFormatted,
     tanggal_berangkat: document.getElementById('sppdTglBerangkat').value,
-    tanggal_kembali: document.getElementById('sppdTglKembali').value
+    tanggal_kembali: document.getElementById('sppdTglKembali').value,
+    dasar_surat: document.getElementById('sppdDasar').value.trim(),
+    nomor_surat_dasar: document.getElementById('sppdNomorDasar').value.trim(),
+    nominal_rupiah: document.getElementById('sppdNominal').value.trim()
   };
 
   for (const [, val] of Object.entries(data)) {
@@ -277,6 +283,9 @@ async function editSppd(id) {
     document.getElementById('sppdLama').value = extractAngkaLama(d.lama_perjalanan);
     document.getElementById('sppdTglBerangkat').value = d.tanggal_berangkat;
     document.getElementById('sppdTglKembali').value = d.tanggal_kembali;
+    document.getElementById('sppdDasar').value = d.dasar_surat || '';
+    document.getElementById('sppdNomorDasar').value = d.nomor_surat_dasar || '';
+    document.getElementById('sppdNominal').value = d.nominal_rupiah || '';
 
     // Update UI ke mode edit
     document.getElementById('formSppdTitle').textContent = `✏️ Edit Data SPPD — ${d.nomor_surat}`;
@@ -323,7 +332,7 @@ async function loadSppdData() {
               <button class="btn-action btn-edit" onclick="editSppd(${item.id})" title="Edit">
                 ✏️
               </button>
-              <button class="btn-action btn-print" onclick="printSppd(${item.id})" title="Cetak">
+              <button class="btn-action btn-print" onclick="printSppdAll(${item.id})" title="Cetak Semua">
                 🖨️
               </button>
               <button class="btn-action btn-delete" onclick="deleteSppd(${item.id})" title="Hapus">
@@ -382,9 +391,17 @@ async function deleteSppd(id) {
   }
 }
 
-// ── Print SPPD ──
+// ── Print SPPD (Single) ──
 function printSppd(id) {
   const printWindow = window.open(`/sppd-print.html?id=${id}`, '_blank', 'width=800,height=1000');
+  if (!printWindow) {
+    showToast('Popup diblokir oleh browser. Izinkan popup untuk mencetak.', 'error');
+  }
+}
+
+// ── Print All Documents ──
+function printSppdAll(id) {
+  const printWindow = window.open(`/print-all.html?id=${id}`, '_blank', 'width=850,height=1000');
   if (!printWindow) {
     showToast('Popup diblokir oleh browser. Izinkan popup untuk mencetak.', 'error');
   }
