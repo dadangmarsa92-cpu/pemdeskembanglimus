@@ -97,12 +97,136 @@ function navigateTo(page) {
   }
 
   // Page-specific init
+  if (page === 'sppd') {
+    if (typeof focusSppdFirstField === 'function') focusSppdFirstField();
+  }
   if (page === 'pengaturan') {
     if (typeof initSettings === 'function') initSettings();
   }
   if (page === 'sppd') {
     if (typeof loadNextNomorSurat === 'function') loadNextNomorSurat();
   }
+  if (page === 'laporan') {
+    initLaporanTabs();
+    loadLaporanSppd();
+  }
+}
+
+// ── Initialize Laporan Tabs ──
+function initLaporanTabs() {
+  const tabs = document.querySelectorAll('#laporanTabs .tab-btn');
+  const contents = document.querySelectorAll('.laporan-tab-content');
+
+  tabs.forEach(tab => {
+    tab.onclick = () => {
+      // Buttons
+      tabs.forEach(b => b.classList.remove('active'));
+      tab.classList.add('active');
+
+      // Content
+      const target = tab.dataset.tab;
+      contents.forEach(c => {
+        c.style.display = c.id === target ? 'block' : 'none';
+      });
+    };
+  });
+}
+
+// ── Load Laporan SPPD ──
+async function loadLaporanSppd() {
+  const tbody = document.getElementById('rekapSppdTableBody');
+  const countEl = document.getElementById('rekapSppdCount');
+  const budgetEl = document.getElementById('rekapSppdBudget');
+
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-muted);">Memuat data...</td></tr>';
+
+  // Filters
+  const fYear = document.getElementById('filterSppdYear').value;
+  const fMonth = document.getElementById('filterSppdMonth').value;
+  const fDateInput = document.getElementById('filterSppdDate').value;
+
+  try {
+    const res = await fetch('/api/sppd');
+    const result = await res.json();
+
+    if (result.success && result.data.length > 0) {
+      let filtered = result.data;
+
+      // Filter by Year
+      if (fYear) {
+        filtered = filtered.filter(item => {
+          return item.tanggal_berangkat && item.tanggal_berangkat.startsWith(fYear);
+        });
+      }
+
+      // Filter by Month
+      if (fMonth) {
+        filtered = filtered.filter(item => {
+          if (!item.tanggal_berangkat) return false;
+          const m = item.tanggal_berangkat.split('-')[1];
+          return m === fMonth;
+        });
+      }
+
+      // Filter by Specific Date
+      if (fDateInput) {
+        filtered = filtered.filter(item => {
+          return item.tanggal_berangkat === fDateInput;
+        });
+      }
+
+      countEl.textContent = filtered.length;
+      
+      let totalBudget = 0;
+      tbody.innerHTML = '';
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-muted);">Tidak ada data yang sesuai filter.</td></tr>';
+        budgetEl.textContent = 'Rp. 0';
+        return;
+      }
+
+      filtered.forEach((item, index) => {
+        const nominalStr = (item.nominal_rupiah || '0').replace(/\./g, '');
+        const nominal = parseInt(nominalStr) || 0;
+        totalBudget += nominal;
+
+        // Custom format dd/mm/yyyy for table
+        let dateDisplay = '-';
+        if (item.tanggal_berangkat) {
+          const [y, m, d] = item.tanggal_berangkat.split('-');
+          dateDisplay = `${d}/${m}/${y}`;
+        }
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${index + 1}</td>
+          <td><strong>${item.nama_pegawai}</strong></td>
+          <td>${item.acara}</td>
+          <td>${dateDisplay}</td>
+          <td style="color:var(--success); font-weight:600;">Rp. ${item.nominal_rupiah || '0'}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      budgetEl.textContent = 'Rp. ' + totalBudget.toLocaleString('id-ID');
+    } else {
+      countEl.textContent = '0';
+      budgetEl.textContent = 'Rp. 0';
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-muted);">Tidak ada data laporan SPPD.</td></tr>';
+    }
+  } catch (err) {
+    console.error(err);
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--danger);">Gagal memuat laporan.</td></tr>';
+  }
+}
+
+function resetLaporanSppd() {
+  document.getElementById('filterSppdYear').value = '';
+  document.getElementById('filterSppdMonth').value = '';
+  document.getElementById('filterSppdDate').value = '';
+  loadLaporanSppd();
 }
 
 // ── Check Session ──

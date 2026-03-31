@@ -8,8 +8,10 @@
     "dev": "node server.js"
   },
   "dependencies": {
+    "docxtemplater": "^3.68.3",
     "express": "^4.21.0",
-    "sql.js": "^1.11.0",
-    "express-session": "^1.18.1"
+    "express-session": "^1.18.1",
+    "pizzip": "^3.2.0",
+    "sql.js": "^1.11.0"
   }
 }

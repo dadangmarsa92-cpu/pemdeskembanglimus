@@ -7,6 +7,9 @@
   <title>Dashboard - Pelayanan Pemerintah Desa</title>
   <link rel="icon" href="assets/logo.png" type="image/png">
   <link rel="stylesheet" href="css/style.css">
+  <!-- Flatpickr (Premium Date Picker) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_blue.css">
 </head>
 <body>
 
@@ -224,15 +227,15 @@
             <form id="sppdForm" autocomplete="off">
               <div class="form-row">
                 <div class="form-group">
-                  <label for="sppdDasar">Dasar Surat</label>
+                  <label for="sppdDasar">Dasar Surat / Instansi Pengirim</label>
                   <div class="input-wrapper">
-                    <input type="text" id="sppdDasar" class="form-input" placeholder="Contoh: Surat Tugas / Undangan" required style="padding-left:16px;">
+                    <input type="text" id="sppdDasar" class="form-input" placeholder="Contoh: Surat Undangan Camat Borobudur" required style="padding-left:16px;">
                   </div>
                 </div>
                 <div class="form-group">
                   <label for="sppdNomorDasar">Nomor Surat Dasar</label>
                   <div class="input-wrapper">
-                    <input type="text" id="sppdNomorDasar" class="form-input" placeholder="Contoh: 001/V/2026" required style="padding-left:16px;">
+                    <input type="text" id="sppdNomorDasar" class="form-input" placeholder="Contoh: 800/123/2026" required style="padding-left:16px;">
                   </div>
                 </div>
               </div>
@@ -273,27 +276,26 @@
 
               <div class="form-row">
                 <div class="form-group">
-                  <label for="sppdJabatan">Jabatan</label>
-                  <div class="input-wrapper">
-                    <input type="text" id="sppdJabatan" class="form-input" placeholder="Contoh: Sekretaris Desa" required style="padding-left:16px;">
-                  </div>
-                </div>
-                <div class="form-group">
                   <label for="sppdAcara">Maksud Perjalanan Dinas</label>
                   <div class="input-wrapper">
                     <input type="text" id="sppdAcara" class="form-input" placeholder="Contoh: Menghadiri Rapat Koordinasi" required style="padding-left:16px;">
                   </div>
                 </div>
-              </div>
-
-              <div class="form-row">
                 <div class="form-group">
                   <label for="sppdKendaraan">Kendaraan yang Dipergunakan</label>
                   <div class="input-wrapper">
-                    <input type="text" id="sppdKendaraan" class="form-input" placeholder="Contoh: Kendaraan Dinas / Roda Dua" required style="padding-left:16px;">
+                    <select id="sppdKendaraan" class="form-input" required style="padding-left:16px;">
+                      <option value="" disabled selected>Pilih Kendaraan...</option>
+                      <option value="Sepeda Motor">Sepeda Motor</option>
+                      <option value="Mobil">Mobil</option>
+                      <option value="Bis">Bis</option>
+                    </select>
                   </div>
                 </div>
-                <div class="form-group">
+              </div>
+
+              <div class="form-row">
+                <div class="form-group" style="flex:2;">
                   <label for="sppdTujuan">Tempat Tujuan</label>
                   <div class="input-wrapper">
                     <input type="text" id="sppdTujuan" class="form-input" placeholder="Contoh: Kantor Kecamatan Borobudur" required style="padding-left:16px;">
@@ -313,7 +315,7 @@
                 <div class="form-group">
                   <label for="sppdTglBerangkat">Tanggal Berangkat</label>
                   <div class="input-wrapper">
-                    <input type="date" id="sppdTglBerangkat" class="form-input" required style="padding-left:16px;">
+                    <input type="text" id="sppdTglBerangkat" class="form-input" placeholder="dd/mm/yyyy" required style="padding-left:16px;">
                   </div>
                 </div>
                 <div class="form-group">
@@ -322,9 +324,16 @@
                     <span class="nomor-auto-badge">🔄 Otomatis</span>
                   </label>
                   <div class="input-wrapper">
-                    <input type="date" id="sppdTglKembali" class="form-input" required style="padding-left:16px; opacity:0.8; cursor:not-allowed;" readonly>
+                    <input type="text" id="sppdTglKembali" class="form-input" placeholder="dd/mm/yyyy" required style="padding-left:16px; opacity:0.8; cursor:not-allowed;" readonly>
                   </div>
                   <small class="field-note">Dihitung otomatis dari Tgl Berangkat + Lama Perjalanan</small>
+                </div>
+                <div class="form-group">
+                  <label for="sppdFile">Unggah Foto / Berkas PDF Surat (Opsional)</label>
+                  <div class="input-wrapper">
+                    <input type="file" id="sppdFile" class="form-input" accept="image/*,application/pdf" style="padding-top:8px;">
+                  </div>
+                  <small class="field-note">Format: JPG, PNG, PDF. Maksimal 5MB.</small>
                 </div>
               </div>
 
@@ -361,7 +370,7 @@
                     <th>Jabatan</th>
                     <th>Tujuan</th>
                     <th>Tgl Berangkat</th>
-                    <th>Aksi</th>
+                    <th style="width:160px;">Aksi</th>
                   </tr>
                 </thead>
                 <tbody id="sppdTableBody">
@@ -383,19 +392,60 @@
             <div class="modal-icon">🖨️</div>
             <h3>Data Berhasil Disimpan!</h3>
             <p>Apakah Anda ingin mencetak Surat Perintah Perjalanan Dinas ini?</p>
-            <div class="modal-actions">
-              <button class="btn-save" id="btnPrintYes">
+            <div class="modal-actions" style="flex-wrap: wrap; gap: 10px;">
+              <button class="btn-save" id="btnPrintYes" style="flex: 1; min-width: 140px;">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;vertical-align:middle;">
                   <polyline points="6 9 6 2 18 2 18 9"></polyline>
                   <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
                   <rect x="6" y="14" width="12" height="8"></rect>
                 </svg>
-                Ya, Cetak
+                Cetak (HTML)
               </button>
-              <button class="btn-cancel" id="btnPrintNo">Tidak, Nanti Saja</button>
+              <a id="btnDownloadWord" href="#" download class="btn-save" style="flex: 1; min-width: 140px; background: #2b579a; text-decoration:none; display:flex; align-items:center; justify-content:center; color:white;">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="margin-right:6px;vertical-align:middle;">
+                  <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/>
+                </svg>
+                Unduh Word
+              </a>
+              <button class="btn-cancel" id="btnPrintNo" style="width: 100%;">Tutup</button>
             </div>
           </div>
         </div>
+
+        <!-- ═══ DELETE CONFIRMATION MODAL ═══ -->
+        <div class="modal-overlay" id="deleteConfirmModal">
+          <div class="modal-card">
+            <div class="modal-icon danger" style="background:rgba(239, 83, 80, 0.1); color:var(--danger);">🗑️</div>
+            <h3>Konfirmasi Penghapusan</h3>
+            <p>Apakah Anda yakin benar-benar ingin menghapus data ini secara permanen? Tindakan ini tidak dapat dibatalkan.</p>
+            <div class="modal-actions">
+              <button class="btn-cancel" id="btnDeleteNo">Batal</button>
+              <button class="btn-save" id="btnDeleteYes" style="background:var(--danger); border-color:var(--danger);">Ya, Hapus Data</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ DETAIL SPPD MODAL ═══ -->
+        <div class="modal-overlay" id="detailSppdModal">
+          <div class="modal-card detail-modal">
+            <div class="modal-header">
+              <h3>📄 Detail Data SPPD</h3>
+              <button class="modal-close" onclick="closeDetailModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="detailSppdBody">
+              <!-- Content will be injected via JS -->
+            </div>
+            <div id="detailSppdDocContainer" style="padding: 0 24px 24px; display:none;">
+              <div id="detailSppdDocPreview" style="width:100%; border-radius:var(--radius-md); overflow:hidden; border:1px solid var(--border-color); background:rgba(255,255,255,0.05); margin-top:16px;">
+                <!-- Image will be injected via JS -->
+              </div>
+            </div>
+            <div class="modal-actions">
+              <button class="btn-cancel" onclick="closeDetailModal()">Tutup</button>
+            </div>
+          </div>
+        </div>
+
 
         <!-- ═══════════════ PAGE: RAB ═══════════════ -->
         <div class="page-section" id="page-rab">
@@ -447,13 +497,103 @@
           <div class="page-header-section">
             <div>
               <h1>📊 Laporan</h1>
-              <p>Rekapitulasi dan laporan kegiatan</p>
+              <p>Rekapitulasi dan laporan kegiatan per kategori</p>
             </div>
           </div>
-          <div class="empty-state">
-            <div class="empty-icon">📊</div>
-            <h3>Belum Ada Laporan</h3>
-            <p>Laporan pelayanan desa akan ditampilkan di sini.</p>
+          
+          <div class="settings-tabs" id="laporanTabs">
+            <button class="tab-btn active" data-tab="laporan-sppd">📋 SPPD</button>
+            <button class="tab-btn" data-tab="laporan-rab">💰 RAB</button>
+            <button class="tab-btn" data-tab="laporan-narasumber">👥 Narasumber</button>
+          </div>
+
+          <div id="laporanContent" class="settings-container">
+            <!-- ── SUB-PAGE: LAPORAN SPPD ── -->
+            <div class="laporan-tab-content active" id="laporan-sppd">
+              <div class="filter-bar" style="margin-bottom:24px; display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+                <div class="form-group" style="margin-bottom:0; flex:1; min-width:120px;">
+                  <label>Tahun</label>
+                  <input type="number" id="filterSppdYear" class="form-input" placeholder="Semua Tahun" style="padding-left:12px;">
+                </div>
+                <div class="form-group" style="margin-bottom:0; flex:1; min-width:140px;">
+                  <label>Bulan</label>
+                  <select id="filterSppdMonth" class="form-input" style="padding-left:12px;">
+                    <option value="">Semua Bulan</option>
+                    <option value="01">Januari</option>
+                    <option value="02">Februari</option>
+                    <option value="03">Maret</option>
+                    <option value="04">April</option>
+                    <option value="05">Mei</option>
+                    <option value="06">Juni</option>
+                    <option value="07">Juli</option>
+                    <option value="08">Agustus</option>
+                    <option value="09">September</option>
+                    <option value="10">Oktober</option>
+                    <option value="11">November</option>
+                    <option value="12">Desember</option>
+                  </select>
+                </div>
+                <div class="form-group" style="margin-bottom:0; flex:1; min-width:160px;">
+                  <label>Tanggal Spesifik</label>
+                  <input type="date" id="filterSppdDate" class="form-input" style="padding-left:12px;">
+                </div>
+                <div style="display:flex; gap:8px;">
+                  <button class="btn-save" onclick="loadLaporanSppd()" style="height:44px; padding:0 16px;">🔍 Filter</button>
+                  <button class="btn-cancel" onclick="resetLaporanSppd()" style="height:44px; padding:0 16px;">🔄 Reset</button>
+                </div>
+              </div>
+
+              <div class="stats-grid" style="margin-bottom:28px;">
+                <div class="stat-card">
+                  <div class="stat-icon blue">📋</div>
+                  <div class="stat-value" id="rekapSppdCount">0</div>
+                  <div class="stat-label">Total Frekuensi SPPD</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-icon teal">💰</div>
+                  <div class="stat-value" id="rekapSppdBudget">Rp. 0</div>
+                  <div class="stat-label">Total Dana Terpakai</div>
+                </div>
+              </div>
+
+              <div class="table-section">
+                <h2>📈 Rekap Penggunaan Dana SPPD</h2>
+                <div style="overflow-x:auto;">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>No</th>
+                        <th>Nama Pegawai</th>
+                        <th>Keperluan</th>
+                        <th>Tanggal</th>
+                        <th>Nominal</th>
+                      </tr>
+                    </thead>
+                    <tbody id="rekapSppdTableBody">
+                      <tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-muted);">Memuat data...</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- ── SUB-PAGE: LAPORAN RAB ── -->
+            <div class="laporan-tab-content" id="laporan-rab" style="display:none;">
+              <div class="empty-state" style="padding:60px;">
+                <div class="empty-icon">💰</div>
+                <h3>Laporan RAB</h3>
+                <p>Modul laporan Rencana Anggaran Biaya akan ditampilkan di sini.</p>
+              </div>
+            </div>
+
+            <!-- ── SUB-PAGE: LAPORAN NARASUMBER ── -->
+            <div class="laporan-tab-content" id="laporan-narasumber" style="display:none;">
+              <div class="empty-state" style="padding:60px;">
+                <div class="empty-icon">👥</div>
+                <h3>Laporan Narasumber</h3>
+                <p>Modul laporan Permohonan/SK Narasumber akan ditampilkan di sini.</p>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -489,6 +629,7 @@
 
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="js/dashboard.js"></script>
   <script src="js/sppd.js"></script>
   <script src="js/settings.js"></script>

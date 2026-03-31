@@ -72,6 +72,22 @@ function renderSettingsUI() {
             <label for="set_kepala_desa">Nama Kepala Desa</label>
             <input type="text" id="set_kepala_desa" class="form-input" value="${s.kepala_desa || ''}" ${!isSuperUser ? 'disabled' : ''}>
           </div>
+          <div class="form-group" style="grid-column: span 2;">
+            <label for="set_alamat_desa">Alamat Desa</label>
+            <input type="text" id="set_alamat_desa" class="form-input" value="${s.alamat_desa || ''}" ${!isSuperUser ? 'disabled' : ''}>
+          </div>
+          <div class="form-group">
+            <label for="set_kode_pos_desa">Kode Pos</label>
+            <input type="text" id="set_kode_pos_desa" class="form-input" value="${s.kode_pos_desa || ''}" ${!isSuperUser ? 'disabled' : ''}>
+          </div>
+          <div class="form-group">
+            <label for="set_telp_desa">Nomor Telepon</label>
+            <input type="text" id="set_telp_desa" class="form-input" value="${s.telp_desa || ''}" ${!isSuperUser ? 'disabled' : ''}>
+          </div>
+          <div class="form-group" style="grid-column: span 2;">
+            <label for="set_email_desa">Email Desa</label>
+            <input type="email" id="set_email_desa" class="form-input" value="${s.email_desa || ''}" ${!isSuperUser ? 'disabled' : ''}>
+          </div>
         </div>
       </div>
     `;
@@ -98,6 +114,20 @@ function renderSettingsUI() {
           <small style="color:var(--text-muted); display:block; margin-bottom:5px;">Preview Format Nomor Surat :</small>
           <strong style="color:var(--accent); font-size:1.1rem; letter-spacing:1px;">${previewNomor}</strong>
         </div>
+      </div>
+
+      <div class="settings-group" style="margin-top:24px; border-top:1px solid var(--glass-border); padding-top:24px;">
+        <div class="settings-group-title">📄 Template Word (.docx)</div>
+        <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:15px; line-height:1.5;">
+          Gunakan file Microsoft Word (.docx) sebagai template surat. Gunakan tag seperti <code>{nama_pegawai}</code>, <code>{nomor_surat}</code>, dst. di dalam file Word Anda.
+        </p>
+        <div style="display:flex; gap:12px; align-items:center;">
+          <input type="file" id="wordTemplateFile" accept=".docx" class="form-input" style="flex:1; padding-top:8px;">
+          <button type="button" class="btn-save" id="btnUploadTemplate" style="width:auto; white-space:nowrap; background:var(--primary-light);">
+             📤 Unggah Template
+          </button>
+        </div>
+        <small class="field-note" style="margin-top:8px;">Pastikan file berformat <strong>.docx</strong> (Word modern).</small>
       </div>
     `;
   } else {
@@ -131,6 +161,72 @@ function renderSettingsUI() {
   if (isSuperUser) {
     document.getElementById('btnSaveSettings')?.addEventListener('click', saveSettings);
     document.getElementById('btnResetSettings')?.addEventListener('click', resetSettings);
+    document.getElementById('btnUploadTemplate')?.addEventListener('click', uploadWordTemplate);
+  }
+}
+
+// ── Upload Word Template ──
+async function uploadWordTemplate() {
+  const fileInput = document.getElementById('wordTemplateFile');
+  const file = fileInput.files[0];
+  if (!file) {
+    showToast('Pilih file .docx terlebih dahulu.', 'error');
+    return;
+  }
+
+  if (!file.name.endsWith('.docx')) {
+    showToast('Hanya file .docx yang diizinkan.', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('btnUploadTemplate');
+  btn.disabled = true;
+  btn.textContent = 'Mengunggah...';
+
+  try {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const base64 = e.target.result;
+        console.log('Mengunggah data template (base64 length):', base64.length);
+        
+        const res = await fetch('/api/settings/upload-template', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ file_base64: base64 })
+        });
+        
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(`Server responded with ${res.status}: ${errorText}`);
+        }
+        
+        const result = await res.json();
+        if (result.success) {
+          showToast('✅ Template Word berhasil diunggah!', 'success');
+          fileInput.value = '';
+        } else {
+          showToast(result.message || 'Gagal mengunggah.', 'error');
+        }
+      } catch (err) {
+        console.error('Upload error:', err);
+        showToast('Gagal mengirim data ke server.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '📤 Unggah Template';
+      }
+    };
+    reader.onerror = () => {
+      showToast('Gagal membaca file lokal.', 'error');
+      btn.disabled = false;
+      btn.innerHTML = '📤 Unggah Template';
+    };
+    reader.readAsDataURL(file);
+  } catch (err) {
+    console.error('File reading error:', err);
+    showToast('Terjadi kesalahan saat memproses file.', 'error');
+    btn.disabled = false;
+    btn.innerHTML = '📤 Unggah Template';
   }
 }
 
@@ -146,7 +242,11 @@ async function saveSettings() {
     nama_desa: 'set_nama_desa',
     nama_kecamatan: 'set_nama_kecamatan',
     nama_kabupaten: 'set_nama_kabupaten',
-    kepala_desa: 'set_kepala_desa'
+    kepala_desa: 'set_kepala_desa',
+    alamat_desa: 'set_alamat_desa',
+    kode_pos_desa: 'set_kode_pos_desa',
+    telp_desa: 'set_telp_desa',
+    email_desa: 'set_email_desa'
   };
 
   for (const [key, id] of Object.entries(inputs)) {
@@ -194,6 +294,10 @@ async function resetSettings() {
     nama_kecamatan: 'Borobudur',
     nama_kabupaten: 'Magelang',
     kepala_desa: 'SOETJI ARIMBI',
+    alamat_desa: 'Jl. Sudirman KM. 03, Kembanglimus',
+    kode_pos_desa: '56553',
+    telp_desa: '(0293) 7182286',
+    email_desa: 'desakembanglimus1@gmail.com',
   };
 
   try {

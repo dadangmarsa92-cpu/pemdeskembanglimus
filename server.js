@@ -3,6 +3,8 @@ const initSqlJs = require('sql.js');
 const session = require('express-session');
 const path = require('path');
 const fs = require('fs');
+const PizZip = require('pizzip');
+const Docxtemplater = require('docxtemplater');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -14,97 +16,115 @@ let db;
 // DATABASE SETUP (async because sql.js uses WASM)
 // ============================================================
 async function initDatabase() {
-  const SQL = await initSqlJs();
-
-  // Load existing database or create new one
-  if (fs.existsSync(DB_PATH)) {
-    const fileBuffer = fs.readFileSync(DB_PATH);
-    db = new SQL.Database(fileBuffer);
-    console.log('📂 Database loaded from file.');
-  } else {
-    db = new SQL.Database();
-    console.log('🆕 New database created.');
-  }
-
-  // Create users table if not exists
-  db.run(`
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      username TEXT UNIQUE NOT NULL,
-      password TEXT NOT NULL,
-      role TEXT NOT NULL CHECK(role IN ('SuperUser', 'User')),
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-
-  // Create SPPD table if not exists
-  db.run(`
-    CREATE TABLE IF NOT EXISTS sppd (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      nomor_surat TEXT NOT NULL,
-      nama_pegawai TEXT NOT NULL,
-      jabatan TEXT NOT NULL,
-      acara TEXT NOT NULL,
-      kendaraan TEXT NOT NULL,
-      tujuan TEXT NOT NULL,
-      lama_perjalanan TEXT NOT NULL,
-      tanggal_berangkat TEXT NOT NULL,
-      tanggal_kembali TEXT NOT NULL,
-      dasar_surat TEXT,
-      nomor_surat_dasar TEXT,
-      nominal_rupiah TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-
-  // Migration: Add columns to existing sppd table
   try {
-    db.run("ALTER TABLE sppd ADD COLUMN dasar_surat TEXT");
-    console.log('📝 Added column: dasar_surat');
-  } catch(e) {}
-  try {
-    db.run("ALTER TABLE sppd ADD COLUMN nomor_surat_dasar TEXT");
-    console.log('📝 Added column: nomor_surat_dasar');
-  } catch(e) {}
-  try {
-    db.run("ALTER TABLE sppd ADD COLUMN nominal_rupiah TEXT");
-    console.log('📝 Added column: nominal_rupiah');
-  } catch(e) {}
+    const SQL = await initSqlJs();
 
-  // Create settings table
-  db.run(`
-    CREATE TABLE IF NOT EXISTS settings (
-      key TEXT PRIMARY KEY,
-      value TEXT NOT NULL
-    )
-  `);
+    // Load existing database or create new one
+    if (fs.existsSync(DB_PATH)) {
+      const fileBuffer = fs.readFileSync(DB_PATH);
+      db = new SQL.Database(fileBuffer);
+      console.log('📂 Database loaded from file.');
+    } else {
+      db = new SQL.Database();
+      console.log('🆕 New database created.');
+    }
 
-  // Insert default settings if not exists
-  const settingsResult = db.exec("SELECT COUNT(*) as count FROM settings");
-  const settingsCount = settingsResult[0].values[0][0];
-  if (settingsCount === 0) {
-    db.run("INSERT INTO settings (key, value) VALUES ('kode_surat', '096')");
-    db.run("INSERT INTO settings (key, value) VALUES ('kode_desa', '18')");
-    db.run("INSERT INTO settings (key, value) VALUES ('tahun', '" + new Date().getFullYear() + "')");
-    db.run("INSERT INTO settings (key, value) VALUES ('nama_desa', 'Kembanglimus')");
-    db.run("INSERT INTO settings (key, value) VALUES ('nama_kecamatan', 'Borobudur')");
-    db.run("INSERT INTO settings (key, value) VALUES ('nama_kabupaten', 'Magelang')");
-    db.run("INSERT INTO settings (key, value) VALUES ('kepala_desa', 'SOETJI ARIMBI')");
-    console.log('✅ Default settings created.');
+    // --- TABLES INITIALIZATION ---
+    
+    // 1. Users Table
+    db.run(`
+      CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        role TEXT NOT NULL CHECK(role IN ('SuperUser', 'User')),
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // 2. SPPD Table (Updated Schema)
+    db.run(`
+      CREATE TABLE IF NOT EXISTS sppd (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nomor_surat TEXT NOT NULL,
+        nama_pegawai TEXT NOT NULL,
+        jabatan TEXT NOT NULL,
+        acara TEXT NOT NULL,
+        kendaraan TEXT NOT NULL,
+        tujuan TEXT NOT NULL,
+        lama_perjalanan TEXT NOT NULL,
+        tanggal_berangkat TEXT NOT NULL,
+        tanggal_kembali TEXT NOT NULL,
+        dasar_surat TEXT,
+        nomor_surat_dasar TEXT,
+        nominal_rupiah TEXT,
+        file_base64 TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // 3. Settings Table
+    db.run(`
+      CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      )
+    `);
+
+    // --- MIGRATIONS (Safe checks) ---
+    const addCol = (table, col, type) => {
+      try {
+        const info = db.exec(`PRAGMA table_info(${table})`);
+        if (info.length > 0) {
+          const exists = info[0].values.some(r => r[1] === col);
+          if (!exists) {
+            db.run(`ALTER TABLE ${table} ADD COLUMN ${col} ${type}`);
+            console.log(`📝 Migration: Added column ${col} to ${table}`);
+          }
+        }
+      } catch (e) {
+        console.warn(`⚠️ Migration warning for ${col}:`, e.message);
+      }
+    };
+
+    addCol('sppd', 'dasar_surat', 'TEXT');
+    addCol('sppd', 'nomor_surat_dasar', 'TEXT');
+    addCol('sppd', 'nominal_rupiah', 'TEXT');
+    addCol('sppd', 'file_base64', 'TEXT');
+
+    // --- SEED DATA ---
+
+    // Default Settings
+    const settingsCheck = db.exec("SELECT COUNT(*) FROM settings");
+    if (settingsCheck[0].values[0][0] === 0) {
+      db.run("INSERT INTO settings (key, value) VALUES ('kode_surat', '096')");
+      db.run("INSERT INTO settings (key, value) VALUES ('kode_desa', '18')");
+      db.run("INSERT INTO settings (key, value) VALUES ('tahun', '" + new Date().getFullYear() + "')");
+      db.run("INSERT INTO settings (key, value) VALUES ('nama_desa', 'Kembanglimus')");
+      db.run("INSERT INTO settings (key, value) VALUES ('nama_kecamatan', 'Borobudur')");
+      db.run("INSERT INTO settings (key, value) VALUES ('nama_kabupaten', 'Magelang')");
+      db.run("INSERT INTO settings (key, value) VALUES ('kepala_desa', 'SOETJI ARIMBI')");
+      db.run("INSERT INTO settings (key, value) VALUES ('alamat_desa', 'Jl. Sudirman KM. 03, Kembanglimus')");
+      db.run("INSERT INTO settings (key, value) VALUES ('kode_pos_desa', '56553')");
+      db.run("INSERT INTO settings (key, value) VALUES ('telp_desa', '(0293) 7182286')");
+      db.run("INSERT INTO settings (key, value) VALUES ('email_desa', 'desakembanglimus1@gmail.com')");
+      console.log('✅ Default settings created.');
+    }
+
+    // Default Users
+    const usersCheck = db.exec('SELECT COUNT(*) FROM users');
+    if (usersCheck[0].values[0][0] === 0) {
+      db.run("INSERT INTO users (username, password, role) VALUES ('admin', 'admin123', 'SuperUser')");
+      db.run("INSERT INTO users (username, password, role) VALUES ('user', 'user123', 'User')");
+      console.log('✅ Default users created.');
+    }
+
+    saveDatabase();
+    console.log('🚀 Database initialization complete.');
+  } catch (err) {
+    console.error('❌ Critical error during database init:', err);
+    throw err;
   }
-
-  // Insert default users if table is empty
-  const result = db.exec('SELECT COUNT(*) as count FROM users');
-  const count = result[0].values[0][0];
-
-  if (count === 0) {
-    db.run("INSERT INTO users (username, password, role) VALUES ('admin', 'admin123', 'SuperUser')");
-    db.run("INSERT INTO users (username, password, role) VALUES ('user', 'user123', 'User')");
-    console.log('✅ Default users created: admin (SuperUser), user (User)');
-  }
-
-  // Save to file
-  saveDatabase();
 }
 
 // Helper: get all settings as object
@@ -146,8 +166,8 @@ function saveDatabase() {
 // ============================================================
 // MIDDLEWARE
 // ============================================================
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(session({
@@ -258,6 +278,37 @@ app.get('/api/users', (req, res) => {
 });
 
 // ============================================================
+// TEMPLATE API ROUTES
+// ============================================================
+
+// Upload Word Template (SuperUser only)
+app.post('/api/settings/upload-template', (req, res) => {
+  if (!req.session.userId || req.session.role !== 'SuperUser') {
+    return res.status(403).json({ success: false, message: 'Akses ditolak.' });
+  }
+
+  const { file_base64 } = req.body;
+  if (!file_base64) {
+    return res.status(400).json({ success: false, message: 'File tidak ditemukan.' });
+  }
+
+  try {
+    const data = file_base64.split(',')[1];
+    const buffer = Buffer.from(data, 'base64');
+    const templateDir = path.join(__dirname, 'templates');
+    if (!fs.existsSync(templateDir)) fs.mkdirSync(templateDir);
+    
+    const templatePath = path.join(templateDir, 'sppd_template.docx');
+    fs.writeFileSync(templatePath, buffer);
+    console.log(`📂 Template Word uploaded: ${buffer.length} bytes`);
+    res.json({ success: true, message: 'Template Word berhasil diunggah.' });
+  } catch (err) {
+    console.error('❌ Template Upload Error:', err);
+    res.status(500).json({ success: false, message: 'Gagal mengunggah template.' });
+  }
+});
+
+// ============================================================
 // SETTINGS API ROUTES
 // ============================================================
 
@@ -313,23 +364,34 @@ app.post('/api/sppd', (req, res) => {
     return res.status(401).json({ success: false, message: 'Belum login.' });
   }
 
-  const { nomor_surat, nama_pegawai, jabatan, acara, kendaraan, tujuan, lama_perjalanan, tanggal_berangkat, tanggal_kembali, dasar_surat, nomor_surat_dasar, nominal_rupiah } = req.body;
+  const { nomor_surat, nama_pegawai, jabatan, acara, kendaraan, tujuan, lama_perjalanan, tanggal_berangkat, tanggal_kembali, dasar_surat, nomor_surat_dasar, nominal_rupiah, file_base64 } = req.body;
+
+  console.log(`[POST /api/sppd] Incoming request for: ${nomor_surat}`);
+  const fileSize = file_base64 ? Math.round(file_base64.length / 1024) : 0;
+  console.log(`[POST /api/sppd] File status: ${file_base64 ? `Attached (${fileSize} KB)` : 'No file'}`);
 
   if (!nomor_surat || !nama_pegawai || !jabatan || !acara || !kendaraan || !tujuan || !lama_perjalanan || !tanggal_berangkat || !tanggal_kembali) {
+    console.warn(`[POST /api/sppd] ❌ Validation failed: missing fields.`);
     return res.status(400).json({ success: false, message: 'Semua field wajib diisi.' });
   }
 
-  db.run(
-    `INSERT INTO sppd (nomor_surat, nama_pegawai, jabatan, acara, kendaraan, tujuan, lama_perjalanan, tanggal_berangkat, tanggal_kembali, dasar_surat, nomor_surat_dasar, nominal_rupiah) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [nomor_surat, nama_pegawai, jabatan, acara, kendaraan, tujuan, lama_perjalanan, tanggal_berangkat, tanggal_kembali, dasar_surat, nomor_surat_dasar, nominal_rupiah]
-  );
-  saveDatabase();
+  try {
+    db.run(
+      `INSERT INTO sppd (nomor_surat, nama_pegawai, jabatan, acara, kendaraan, tujuan, lama_perjalanan, tanggal_berangkat, tanggal_kembali, dasar_surat, nomor_surat_dasar, nominal_rupiah, file_base64) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [nomor_surat, nama_pegawai, jabatan, acara, kendaraan, tujuan, lama_perjalanan, tanggal_berangkat, tanggal_kembali, dasar_surat, nomor_surat_dasar, nominal_rupiah, file_base64]
+    );
+    saveDatabase();
+    console.log(`[POST /api/sppd] ✅ Successfully saved SPPD data.`);
 
-  // Get the last inserted id
-  const lastId = db.exec('SELECT last_insert_rowid() as id');
-  const id = lastId[0].values[0][0];
+    // Get the last inserted id
+    const lastId = db.exec('SELECT last_insert_rowid() as id');
+    const id = lastId[0].values[0][0];
 
-  res.json({ success: true, message: 'Data SPPD berhasil disimpan.', id });
+    res.json({ success: true, message: 'Data SPPD berhasil disimpan.', id });
+  } catch (err) {
+    console.error(`[POST /api/sppd] ❌ DB Error:`, err.message);
+    res.status(500).json({ success: false, message: 'Gagal menyimpan ke database.', error: err.message });
+  }
 });
 
 // Get all SPPD
@@ -393,25 +455,142 @@ app.put('/api/sppd/:id', (req, res) => {
     return res.status(401).json({ success: false, message: 'Belum login.' });
   }
 
-  const { nomor_surat, nama_pegawai, jabatan, acara, kendaraan, tujuan, lama_perjalanan, tanggal_berangkat, tanggal_kembali, dasar_surat, nomor_surat_dasar, nominal_rupiah } = req.body;
+  const { nomor_surat, nama_pegawai, jabatan, acara, kendaraan, tujuan, lama_perjalanan, tanggal_berangkat, tanggal_kembali, dasar_surat, nomor_surat_dasar, nominal_rupiah, file_base64 } = req.body;
+
+  console.log(`[PUT /api/sppd/${req.params.id}] Updating request for: ${nomor_surat}`);
+  const fileSize = file_base64 ? Math.round(file_base64.length / 1024) : 0;
+  console.log(`[PUT /api/sppd/${req.params.id}] File status: ${file_base64 ? `Attached (${fileSize} KB)` : 'No file'}`);
 
   if (!nomor_surat || !nama_pegawai || !jabatan || !acara || !kendaraan || !tujuan || !lama_perjalanan || !tanggal_berangkat || !tanggal_kembali) {
     return res.status(400).json({ success: false, message: 'Semua field wajib diisi.' });
   }
 
-  // Check if exists
-  const existing = db.exec(`SELECT id FROM sppd WHERE id = ${parseInt(req.params.id)}`);
-  if (!existing.length) {
-    return res.status(404).json({ success: false, message: 'Data tidak ditemukan.' });
+  try {
+    // Check if exists
+    const existing = db.exec(`SELECT id FROM sppd WHERE id = ${parseInt(req.params.id)}`);
+    if (!existing.length) {
+      return res.status(404).json({ success: false, message: 'Data tidak ditemukan.' });
+    }
+
+    db.run(
+      `UPDATE sppd SET nomor_surat=?, nama_pegawai=?, jabatan=?, acara=?, kendaraan=?, tujuan=?, lama_perjalanan=?, tanggal_berangkat=?, tanggal_kembali=?, dasar_surat=?, nomor_surat_dasar=?, nominal_rupiah=?, file_base64=? WHERE id=?`,
+      [nomor_surat, nama_pegawai, jabatan, acara, kendaraan, tujuan, lama_perjalanan, tanggal_berangkat, tanggal_kembali, dasar_surat, nomor_surat_dasar, nominal_rupiah, file_base64, parseInt(req.params.id)]
+    );
+    saveDatabase();
+    console.log(`[PUT /api/sppd/${req.params.id}] ✅ Successfully updated SPPD data.`);
+
+    res.json({ success: true, message: 'Data SPPD berhasil diperbarui.' });
+  } catch (err) {
+    console.error(`[PUT /api/sppd/${req.params.id}] ❌ DB Error:`, err.message);
+    res.status(500).json({ success: false, message: 'Gagal memperbarui database.', error: err.message });
+  }
+});
+
+// Helper: Format Date ID
+function formatDateID(dateStr) {
+  if (!dateStr) return '-';
+  const d = new Date(dateStr);
+  const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+// Helper: Get Day Name ID
+function getDayNameID(dateStr) {
+  if (!dateStr) return '-';
+  const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+  const d = new Date(dateStr);
+  return days[d.getDay()];
+}
+
+// Generate Word (DOCX) SPPD
+app.get('/api/sppd/generate-docx/:id', (req, res) => {
+  const sppdId = req.params.id;
+  console.log(`[GET /api/sppd/generate-docx] 📥 Requesting DOCX for ID: ${sppdId}`);
+
+  if (!req.session.userId) {
+    console.warn(`[GET /api/sppd/generate-docx] ❌ Unauthorized request.`);
+    return res.status(401).json({ success: false, message: 'Belum login.' });
   }
 
-  db.run(
-    `UPDATE sppd SET nomor_surat=?, nama_pegawai=?, jabatan=?, acara=?, kendaraan=?, tujuan=?, lama_perjalanan=?, tanggal_berangkat=?, tanggal_kembali=?, dasar_surat=?, nomor_surat_dasar=?, nominal_rupiah=? WHERE id=?`,
-    [nomor_surat, nama_pegawai, jabatan, acara, kendaraan, tujuan, lama_perjalanan, tanggal_berangkat, tanggal_kembali, dasar_surat, nomor_surat_dasar, nominal_rupiah, parseInt(req.params.id)]
-  );
-  saveDatabase();
+  const templatePath = path.join(__dirname, 'templates', 'sppd_template.docx');
+  if (!fs.existsSync(templatePath)) {
+    return res.status(404).send('Template Word tidak ditemukan. Silakan unggah template di menu Pengaturan.');
+  }
 
-  res.json({ success: true, message: 'Data SPPD berhasil diperbarui.' });
+  try {
+    const stmt = db.prepare('SELECT * FROM sppd WHERE id = ?');
+    stmt.bind([parseInt(req.params.id)]);
+    let item = null;
+    if (stmt.step()) item = stmt.getAsObject();
+    stmt.free();
+
+    if (!item) return res.status(404).send('Data SPPD tidak ditemukan.');
+
+    const settings = getSettings();
+    
+    // Prepare Data for Template
+    const templateData = {
+      nomor_surat: item.nomor_surat,
+      nama_pegawai: item.nama_pegawai,
+      jabatan: item.jabatan,
+      acara: item.acara,
+      kendaraan: item.kendaraan,
+      tujuan: item.tujuan,
+      lama_perjalanan: item.lama_perjalanan,
+      tgl_berangkat: formatDateID(item.tanggal_berangkat),
+      tgl_kembali: formatDateID(item.tanggal_kembali),
+      dasar_surat: item.dasar_surat || '-',
+      nomor_dasar: item.nomor_surat_dasar || '-',
+      nominal: item.nominal_rupiah ? `Rp. ${new Intl.NumberFormat('id-ID').format(Number(item.nominal_rupiah))}` : 'Rp. 0',
+      hari_berangkat: getDayNameID(item.tanggal_berangkat),
+      hari_kembali: getDayNameID(item.tanggal_kembali),
+      nama_desa: settings.nama_desa || 'Kembanglimus',
+      nama_kecamatan: settings.nama_kecamatan || 'Borobudur',
+      nama_kabupaten: settings.nama_kabupaten || 'Magelang',
+      kepala_desa: settings.kepala_desa || 'SOETJI ARIMBI',
+      alamat_desa: settings.alamat_desa || '-',
+      kode_pos_desa: settings.kode_pos_desa || '-',
+      telp_desa: settings.telp_desa || '-',
+      email_desa: settings.email_desa || '-'
+    };
+
+    const content = fs.readFileSync(templatePath); // Read as Buffer (recommended for PizZip v3)
+    const zip = new PizZip(content);
+    const doc = new Docxtemplater(zip, {
+      paragraphLoop: true,
+      linebreaks: true,
+    });
+
+    doc.render(templateData);
+
+    const buf = doc.getZip().generate({
+      type: 'nodebuffer',
+      compression: 'DEFLATE',
+    });
+
+    const safeFilename = `SPPD_${item.nama_pegawai.replace(/[^a-zA-Z0-9]/g, '_')}.docx`;
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}"`);
+    res.setHeader('Content-Length', buf.length);
+    res.send(buf);
+
+  } catch (err) {
+    // Detailed Docxtemplater Error Handling
+    if (err.properties && err.properties.errors instanceof Array) {
+      const errorMessages = err.properties.errors.map(function (error) {
+        return error.properties.explanation;
+      }).join("\n");
+      console.error('❌ DOCX Template Syntax Errors:\n', errorMessages);
+    } else {
+      console.error('❌ DOCX Generation Error Details:', {
+        message: err.message,
+        stack: err.stack,
+        id: req.params.id
+      });
+    }
+    
+    res.status(500).send('Ada kesalahan penulisan tag {{ }} di file Template Word Anda. Mohon periksa kembali file template.');
+  }
 });
 
 
@@ -431,6 +610,16 @@ app.get('/api/stats', (req, res) => {
       permohonan: 0,
       sk: 0
     }
+  });
+});
+
+// Generic Error Handler
+app.use((err, req, res, next) => {
+  console.error('[SERVER ERROR]', err.stack);
+  res.status(500).json({ 
+    success: false, 
+    message: 'Terjadi kesalahan sistem di server.',
+    error: err.message
   });
 });
 
