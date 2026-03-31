@@ -71,6 +71,14 @@ async function initDatabase() {
       )
     `);
 
+    // 3. Settings Table
+    db.run(`
+      CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      )
+    `);
+
     // --- MIGRATIONS (Safe checks) ---
     const addCol = (table, col, type) => {
       try {

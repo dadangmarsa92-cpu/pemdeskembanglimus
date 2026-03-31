@@ -15,7 +15,6 @@ document.addEventListener('DOMContentLoaded', () => {
 const pageTitles = {
   dashboard: 'Dashboard',
   sppd: 'SPPD',
-  rab: 'RAB',
   permohonan: 'Permohonan Narasumber',
   sk: 'SK Narasumber',
   laporan: 'Laporan',
@@ -278,11 +277,19 @@ function renderDashboard(user) {
       'Anda login sebagai User. Anda dapat mengakses layanan pelayanan desa yang tersedia.';
   }
 
-  // Set placeholder stats (will be dynamic later)
-  document.getElementById('statSppd').textContent = '0';
-  document.getElementById('statRab').textContent = '0';
-  document.getElementById('statPermohonan').textContent = '0';
-  document.getElementById('statSk').textContent = '0';
+  updateDashboardStats();
+}
+
+async function updateDashboardStats() {
+  try {
+    const res = await fetch('/api/stats');
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById('statSppd').textContent = data.stats.sppd || '0';
+      document.getElementById('statPermohonan').textContent = data.stats.permohonan || '0';
+      document.getElementById('statSk').textContent = data.stats.sk || '0';
+    }
+  } catch (err) { console.error('Failed to load stats:', err); }
 }
 
 // ── Load Users Table (SuperUser) ──
