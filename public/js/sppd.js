@@ -38,6 +38,23 @@ function initFormInteractivity() {
       }
     });
   }
+
+  // Title Case for Text Inputs
+  const titleCaseInputs = [
+    'sppdNama', 'sppdJabatan', 'sppdAcara', 'sppdTujuan', 'sppdDasar'
+  ];
+  titleCaseInputs.forEach(id => {
+    const input = document.getElementById(id);
+    if (input) {
+      input.addEventListener('input', function(e) {
+        const start = this.selectionStart;
+        const end = this.selectionEnd;
+        // Convert to lowercase first, then uppercase first letter of each word
+        this.value = this.value.toLowerCase().replace(/(^|\s)\S/g, l => l.toUpperCase());
+        this.setSelectionRange(start, end);
+      });
+    }
+  });
 }
 
 // ── Konversi angka ke kata Indonesia ──
