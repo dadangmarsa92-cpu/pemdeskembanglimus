@@ -2,6 +2,8 @@
 // DASHBOARD PAGE LOGIC - With Sidebar Navigation
 // ============================================================
 
+let currentFilteredLaporan = []; // To store data for excel/pdf export
+
 document.addEventListener('DOMContentLoaded', () => {
   checkSession();
   initSidebar();
@@ -15,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
 const pageTitles = {
   dashboard: 'Dashboard',
   sppd: 'SPPD',
+  narasumber: 'Narasumber',
   permohonan: 'Permohonan Narasumber',
   sk: 'SK Narasumber',
   laporan: 'Laporan',
@@ -109,6 +112,11 @@ function navigateTo(page) {
     initLaporanTabs();
     loadLaporanSppd();
   }
+
+  if (page === 'narasumber' && typeof loadNarasumberData === 'function') {
+    loadNarasumberData();
+    loadNextNaraNumber();
+  }
 }
 
 // ── Initialize Laporan Tabs ──
@@ -175,6 +183,7 @@ async function loadLaporanSppd() {
         });
       }
 
+      currentFilteredLaporan = filtered;
       countEl.textContent = filtered.length;
       
       let totalBudget = 0;
@@ -226,6 +235,111 @@ function resetLaporanSppd() {
   document.getElementById('filterSppdMonth').value = '';
   document.getElementById('filterSppdDate').value = '';
   loadLaporanSppd();
+}
+
+// ── Export SPPD to Excel ──
+async function exportLaporanSppdExcel() {
+  if (!currentFilteredLaporan || currentFilteredLaporan.length === 0) {
+    showToast('Tidak ada data untuk diekspor.', 'error');
+    return;
+  }
+
+  try {
+    // Get setting for Nama Desa
+    const sRes = await fetch('/api/settings');
+    const sData = await sRes.json();
+    const settings = sData.success ? sData.settings : {};
+    const namaDesa = settings.nama_desa || 'Kembanglimus';
+    const tahun = settings.tahun || new Date().getFullYear();
+
+    // Prepare Date Range for Header
+    const fDate = document.getElementById('filterSppdDate').value;
+    const fMonth = document.getElementById('filterSppdMonth').value;
+    const fYear = document.getElementById('filterSppdYear').value || tahun;
+    let rangeHeader = `TAHUN ${fYear}`;
+    if (fMonth) {
+      const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+      rangeHeader = `${monthNames[parseInt(fMonth)-1].toUpperCase()} ${fYear}`;
+    }
+    if (fDate) {
+      const [y, m, d] = fDate.split('-');
+      rangeHeader = `${d}/${m}/${y}`;
+    }
+
+    const title = `LAPORAN SPPD DESA ${namaDesa.toUpperCase()}`;
+    const subtitle = `PERIODE: ${rangeHeader}`;
+
+    // Prepare Data for SheetJS
+    const data = currentFilteredLaporan.map((item, index) => ({
+      'No': index + 1,
+      'Nomor Surat': item.nomor_surat,
+      'Nama Pegawai': item.nama_pegawai,
+      'Jabatan': item.jabatan,
+      'Tujuan': item.tujuan,
+      'Acara / Maksud': item.acara,
+      'Lama': item.lama_perjalanan || '-',
+      'Tgl Berangkat': item.tanggal_berangkat ? item.tanggal_berangkat.split('-').reverse().join('/') : '-',
+      'Tgl Kembali': item.tanggal_kembali ? item.tanggal_kembali.split('-').reverse().join('/') : '-',
+      'Nominal (Rp)': parseInt(item.nominal_rupiah) || 0
+    }));
+
+    const totalBudget = currentFilteredLaporan.reduce((sum, item) => sum + (parseInt(item.nominal_rupiah) || 0), 0);
+    
+    // Create Worksheet
+    const ws = XLSX.utils.json_to_sheet([]);
+    
+    // Add Headers Manual
+    XLSX.utils.sheet_add_aoa(ws, [
+      [title],
+      [subtitle],
+      []
+    ], { origin: 'A1' });
+
+    // Add Data Table
+    XLSX.utils.sheet_add_json(ws, data, { origin: 'A4', skipHeader: false });
+
+    // Add Total at the bottom
+    const lastRow = 4 + data.length + 1;
+    XLSX.utils.sheet_add_aoa(ws, [
+      ['', '', '', '', '', '', '', '', 'TOTAL PENGGUNAAN ANGGARAN:', totalBudget]
+    ], { origin: `A${lastRow}` });
+
+    // Create Workbook
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Laporan SPPD');
+
+    // Download
+    XLSX.writeFile(wb, `Laporan_SPPD_${namaDesa}_${fYear}.xlsx`);
+    showToast('Laporan Excel berhasil diunduh.', 'success');
+  } catch (err) {
+    console.error(err);
+    showToast('Gagal mengekspor ke Excel.', 'error');
+  }
+}
+
+// ── Export SPPD to PDF (Print) ──
+function printLaporanSppdPdf() {
+  if (!currentFilteredLaporan || currentFilteredLaporan.length === 0) {
+    showToast('Tidak ada data untuk dicetak.', 'error');
+    return;
+  }
+
+  // Save current report data to localStorage so the print page can read it
+  const reportData = {
+    data: currentFilteredLaporan,
+    filters: {
+      year: document.getElementById('filterSppdYear').value,
+      month: document.getElementById('filterSppdMonth').value,
+      date: document.getElementById('filterSppdDate').value
+    }
+  };
+  localStorage.setItem('printReportData', JSON.stringify(reportData));
+
+  // Open print page
+  const printWin = window.open('laporan-sppd-cetak.html', '_blank');
+  if (!printWin) {
+    showToast('Pop-up terblokir. Izinkan pop-up untuk mencetak.', 'error');
+  }
 }
 
 // ── Check Session ──
@@ -285,11 +399,34 @@ async function updateDashboardStats() {
     const res = await fetch('/api/stats');
     const data = await res.json();
     if (data.success) {
-      document.getElementById('statSppd').textContent = data.stats.sppd || '0';
-      document.getElementById('statPermohonan').textContent = data.stats.permohonan || '0';
-      document.getElementById('statSk').textContent = data.stats.sk || '0';
+      if (document.getElementById('statSppd')) document.getElementById('statSppd').textContent = data.stats.sppd || '0';
+      if (document.getElementById('statNarasumberTotal')) document.getElementById('statNarasumberTotal').textContent = data.stats.narasumber || '0';
+      
+      // Dashboard items
+      if (document.getElementById('statPermohonan')) document.getElementById('statPermohonan').textContent = data.stats.permohonan || '0';
+      if (document.getElementById('statSk')) document.getElementById('statSk').textContent = data.stats.sk || '0';
     }
   } catch (err) { console.error('Failed to load stats:', err); }
+}
+
+// ── Common Utilities ──
+function formatDateID(dateStr) {
+  if (!dateStr) return '-';
+  const d = new Date(dateStr);
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear(); 
+  return `${day}/${month}/${year}`;
+}
+
+function reformatToISO(dmY) {
+  if (!dmY) return '';
+  const parts = dmY.split('/');
+  if (parts.length !== 3) return dmY;
+  let [d, m, y] = parts;
+  let yearNum = parseInt(y);
+  if (yearNum < 100) yearNum += 2000;
+  return `${yearNum}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 }
 
 // ── Load Users Table (SuperUser) ──

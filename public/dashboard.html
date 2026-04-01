@@ -67,23 +67,13 @@
             </a>
           </li>
           <li>
-            <a href="#" class="sidebar-link" data-page="permohonan">
+            <a href="#" class="sidebar-link" data-page="narasumber">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                 <circle cx="8.5" cy="7" r="4"></circle>
-                <line x1="20" y1="8" x2="20" y2="14"></line>
-                <line x1="23" y1="11" x2="17" y2="11"></line>
+                <polyline points="17 11 19 13 23 9"></polyline>
               </svg>
-              <span>Permohonan Narasumber</span>
-            </a>
-          </li>
-          <li>
-            <a href="#" class="sidebar-link" data-page="sk">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                <polyline points="22 4 12 14.01 9 11.01"></polyline>
-              </svg>
-              <span>SK Narasumber</span>
+              <span>Narasumber</span>
             </a>
           </li>
           <li class="sidebar-section-label">Lainnya</li>
@@ -378,22 +368,14 @@
             <div class="modal-icon">🖨️</div>
             <h3>Data Berhasil Disimpan!</h3>
             <p>Apakah Anda ingin mencetak Surat Perintah Perjalanan Dinas ini?</p>
-            <div class="modal-actions" style="flex-wrap: wrap; gap: 10px;">
-              <button class="btn-save" id="btnPrintYes" style="flex: 1; min-width: 140px;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;vertical-align:middle;">
-                  <polyline points="6 9 6 2 18 2 18 9"></polyline>
-                  <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-                  <rect x="6" y="14" width="12" height="8"></rect>
-                </svg>
-                Cetak (HTML)
-              </button>
-              <a id="btnDownloadWord" href="#" download class="btn-save" style="flex: 1; min-width: 140px; background: #2b579a; text-decoration:none; display:flex; align-items:center; justify-content:center; color:white;">
+            <div class="modal-actions">
+              <a id="btnDownloadWord" href="#" download class="btn-save" style="background:#2b579a; text-decoration:none; display:flex; align-items:center; justify-content:center; color:white;">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="margin-right:6px;vertical-align:middle;">
                   <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/>
                 </svg>
-                Unduh Word
+                Unduh Word (.docx)
               </a>
-              <button class="btn-cancel" id="btnPrintNo" style="width: 100%;">Tutup</button>
+              <button class="btn-cancel" id="btnPrintNo">Tutup</button>
             </div>
           </div>
         </div>
@@ -433,33 +415,138 @@
         </div>
 
 
-        <!-- ═══════════════ PAGE: PERMOHONAN NARASUMBER ═══════════════ -->
-        <div class="page-section" id="page-permohonan">
+        <!-- ═══════════════ PAGE: NARASUMBER ═══════════════ -->
+        <div class="page-section" id="page-narasumber">
           <div class="page-header-section">
             <div>
-              <h1>👥 Permohonan Narasumber</h1>
-              <p>Kelola permohonan narasumber kegiatan desa</p>
+              <h1 id="narasumberPageTitle">👥 Manajemen Narasumber</h1>
+              <p>Kelola data dan cetak surat narasumber kegiatan desa</p>
             </div>
           </div>
-          <div class="empty-state">
-            <div class="empty-icon">👥</div>
-            <h3>Belum Ada Permohonan</h3>
-            <p>Data permohonan narasumber akan ditampilkan di sini.</p>
-          </div>
-        </div>
 
-        <!-- ═══════════════ PAGE: SK NARASUMBER ═══════════════ -->
-        <div class="page-section" id="page-sk">
-          <div class="page-header-section">
-            <div>
-              <h1>✅ SK Narasumber</h1>
-              <p>Surat Keputusan Narasumber</p>
+          <!-- Quick Stats -->
+          <div class="stats-grid" style="margin-bottom:28px;">
+            <div class="stat-card">
+              <div class="stat-icon blue">👥</div>
+              <div class="stat-value" id="statNarasumberTotal">0</div>
+              <div class="stat-label">Total Data Narasumber</div>
             </div>
           </div>
-          <div class="empty-state">
-            <div class="empty-icon">✅</div>
-            <h3>Belum Ada SK</h3>
-            <p>Data Surat Keputusan Narasumber akan ditampilkan di sini.</p>
+
+          <!-- Narasumber Form Card -->
+          <div class="form-card" id="narasumberFormCard" style="margin-bottom:28px;">
+            <div class="form-card-title" id="narasumberFormTitle">📝 Input Data Narasumber</div>
+            <form id="narasumberForm">
+              <input type="hidden" id="narasumberEditId" value="">
+              
+              <div class="form-grid">
+                <div class="form-group" style="grid-column: span 2;">
+                  <label for="naraNomor">
+                    Nomor Surat 
+                    <span class="nomor-auto-badge">✨ Auto</span>
+                  </label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">🔢</span>
+                    <input type="text" id="naraNomor" class="form-input" placeholder="Memuat nomor otomatis..." required readonly style="opacity:0.8; cursor:not-allowed;">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="naraTanggalSurat">Tanggal Surat</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">📅</span>
+                    <input type="text" id="naraTanggalSurat" class="form-input" placeholder="dd/mm/yyyy" required>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="naraNama">Nama Narasumber</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">👤</span>
+                    <input type="text" id="naraNama" class="form-input" placeholder="Nama Lengkap" required>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="naraBidang">Bidang</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">🏢</span>
+                    <input type="text" id="naraBidang" class="form-input" placeholder="Contoh: Infrastruktur / Pemberdayaan" required>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="naraKegiatan">Nama Kegiatan</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">📋</span>
+                    <input type="text" id="naraKegiatan" class="form-input" placeholder="Nama Kegiatan Lengkap" required>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="naraTempat">Tempat Pelaksanaan</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">📍</span>
+                    <input type="text" id="naraTempat" class="form-input" placeholder="Lokasi Kegiatan" required>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="naraTanggal">Tanggal Pelaksanaan</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">📅</span>
+                    <input type="text" id="naraTanggal" class="form-input" placeholder="dd/mm/yyyy" required>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="naraWaktu">Waktu Pelaksanaan</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">🕒</span>
+                    <input type="text" id="naraWaktu" class="form-input" placeholder="Contoh: 09.00 WIB s/d Selesai" required>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-actions" style="margin-top:24px;">
+                <button type="submit" class="btn-save" id="btnSaveNarasumber">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;vertical-align:middle;">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                  </svg>
+                  <span id="btnSaveNarasumberText">Simpan Data</span>
+                </button>
+                <button type="button" class="btn-cancel" id="btnCancelNarasumber">Batal</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Narasumber Table Card -->
+          <div class="table-section">
+            <h2>📊 Daftar Narasumber</h2>
+            <div style="overflow-x:auto;">
+              <table class="data-table" id="narasumberTable">
+                <thead>
+                  <tr>
+                    <th>No</th>
+                    <th>Nomor Surat</th>
+                    <th>Nama Narasumber</th>
+                    <th>Kegiatan</th>
+                    <th>Tanggal</th>
+                    <th style="width:160px;">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="narasumberTableBody">
+                  <!-- JS Injected -->
+                </tbody>
+              </table>
+            </div>
+            <div class="empty-state" id="narasumberEmptyState" style="display:none; padding:60px 40px;">
+              <div class="empty-icon">👥</div>
+              <h3>Belum Ada Data Narasumber</h3>
+              <p>Data yang tersimpan akan muncul di daftar ini.</p>
+            </div>
           </div>
         </div>
 
@@ -508,9 +595,12 @@
                   <label>Tanggal Spesifik</label>
                   <input type="date" id="filterSppdDate" class="form-input" style="padding-left:12px;">
                 </div>
-                <div style="display:flex; gap:8px;">
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
                   <button class="btn-save" onclick="loadLaporanSppd()" style="height:44px; padding:0 16px;">🔍 Filter</button>
                   <button class="btn-cancel" onclick="resetLaporanSppd()" style="height:44px; padding:0 16px;">🔄 Reset</button>
+                  <div style="width:2px; height:24px; background:var(--glass-border); margin:10px 4px; align-self:center;"></div>
+                  <button class="btn-save" onclick="exportLaporanSppdExcel()" style="height:44px; padding:0 16px; background:#1d6f42;">📈 Excel</button>
+                  <button class="btn-save" onclick="printLaporanSppdPdf()" style="height:44px; padding:0 16px; background:var(--primary-light);">🖨️ Cetak PDF</button>
                 </div>
               </div>
 
@@ -601,8 +691,10 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <script src="js/dashboard.js"></script>
   <script src="js/sppd.js"></script>
+  <script src="js/narasumber.js"></script>
   <script src="js/settings.js"></script>
 </body>
 </html>

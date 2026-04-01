@@ -29,61 +29,51 @@ async function initDatabase() {
       console.log('🆕 New database created.');
     }
 
-    // --- TABLES INITIALIZATION ---
-    
-    // 1. Users Table
-    db.run(`
-      CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL,
-        role TEXT NOT NULL CHECK(role IN ('SuperUser', 'User')),
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
+    console.log('📝 Initializing tables...');
+    const tables = [
+      `CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE NOT NULL, password TEXT NOT NULL, role TEXT NOT NULL CHECK(role IN ('SuperUser', 'User')), created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`,
+      `CREATE TABLE IF NOT EXISTS sppd (id INTEGER PRIMARY KEY AUTOINCREMENT, nomor_surat TEXT NOT NULL, nama_pegawai TEXT NOT NULL, jabatan TEXT NOT NULL, acara TEXT NOT NULL, kendaraan TEXT NOT NULL, tujuan TEXT NOT NULL, lama_perjalanan TEXT NOT NULL, tanggal_berangkat TEXT NOT NULL, tanggal_kembali TEXT NOT NULL, dasar_surat TEXT, nomor_surat_dasar TEXT, nominal_rupiah TEXT, file_base64 TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`,
+      `CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)`,
+      `CREATE TABLE IF NOT EXISTS narasumber (id INTEGER PRIMARY KEY AUTOINCREMENT, nomor_surat TEXT NOT NULL, tanggal_surat TEXT NOT NULL, nama_narasumber TEXT NOT NULL, bidang TEXT NOT NULL, kegiatan TEXT NOT NULL, tempat_pelaksanaan TEXT NOT NULL, tanggal_pelaksanaan TEXT NOT NULL, waktu_pelaksanaan TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`
+    ];
 
-    // 2. SPPD Table (Updated Schema)
-    db.run(`
-      CREATE TABLE IF NOT EXISTS sppd (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        nomor_surat TEXT NOT NULL,
-        nama_pegawai TEXT NOT NULL,
-        jabatan TEXT NOT NULL,
-        acara TEXT NOT NULL,
-        kendaraan TEXT NOT NULL,
-        tujuan TEXT NOT NULL,
-        lama_perjalanan TEXT NOT NULL,
-        tanggal_berangkat TEXT NOT NULL,
-        tanggal_kembali TEXT NOT NULL,
-        dasar_surat TEXT,
-        nomor_surat_dasar TEXT,
-        nominal_rupiah TEXT,
-        file_base64 TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
+    for (const sql of tables) {
+      db.run(sql);
+      await new Promise(r => setTimeout(r, 50));
+    }
+    console.log('✅ Tables ready.');
 
-    // 3. Settings Table
-    db.run(`
-      CREATE TABLE IF NOT EXISTS settings (
-        key TEXT PRIMARY KEY,
-        value TEXT NOT NULL
-      )
-    `);
+    // --- SEED DATA ---
+    console.log('🌱 Seeding default data...');
+    const currentYear = new Date().getFullYear().toString();
+    const seedCommands = [
+      `INSERT OR IGNORE INTO settings (key, value) VALUES ('kode_surat', '096')`,
+      `INSERT OR IGNORE INTO settings (key, value) VALUES ('kode_surat_narasumber', '005')`,
+      `INSERT OR IGNORE INTO settings (key, value) VALUES ('kode_desa', '18')`,
+      `INSERT OR IGNORE INTO settings (key, value) VALUES ('tahun', '${currentYear}')`,
+      `INSERT OR IGNORE INTO settings (key, value) VALUES ('nama_desa', 'Kembanglimus')`,
+      `INSERT OR IGNORE INTO settings (key, value) VALUES ('nama_kecamatan', 'Borobudur')`,
+      `INSERT OR IGNORE INTO settings (key, value) VALUES ('nama_kabupaten', 'Magelang')`,
+      `INSERT OR IGNORE INTO settings (key, value) VALUES ('kepala_desa', 'SOETJI ARIMBI')`,
+      `INSERT OR IGNORE INTO settings (key, value) VALUES ('alamat_desa', 'Jl. Sudirman KM. 03, Kembanglimus')`,
+      `INSERT OR IGNORE INTO settings (key, value) VALUES ('kode_pos_desa', '56553')`,
+      `INSERT OR IGNORE INTO settings (key, value) VALUES ('telp_desa', '(0293) 7182286')`,
+      `INSERT OR IGNORE INTO settings (key, value) VALUES ('email_desa', 'desakembanglimus1@gmail.com')`,
+      `INSERT OR IGNORE INTO users (id, username, password, role) VALUES (1, 'admin', 'admin123', 'SuperUser')`,
+      `INSERT OR IGNORE INTO users (id, username, password, role) VALUES (2, 'user', 'user123', 'User')`
+    ];
 
-    // 3. Settings Table
-    db.run(`
-      CREATE TABLE IF NOT EXISTS settings (
-        key TEXT PRIMARY KEY,
-        value TEXT NOT NULL
-      )
-    `);
+    for (const sql of seedCommands) {
+      db.run(sql);
+      await new Promise(r => setTimeout(r, 20));
+    }
+    console.log('✅ Seeding complete.');
 
-    // --- MIGRATIONS (Safe checks) ---
+    // --- MIGRATIONS ---
     const addCol = (table, col, type) => {
       try {
         const info = db.exec(`PRAGMA table_info(${table})`);
-        if (info.length > 0) {
+        if (info && info.length > 0) {
           const exists = info[0].values.some(r => r[1] === col);
           if (!exists) {
             db.run(`ALTER TABLE ${table} ADD COLUMN ${col} ${type}`);
@@ -100,37 +90,11 @@ async function initDatabase() {
     addCol('sppd', 'nominal_rupiah', 'TEXT');
     addCol('sppd', 'file_base64', 'TEXT');
 
-    // --- SEED DATA ---
-
-    // Default Settings
-    const settingsCheck = db.exec("SELECT COUNT(*) FROM settings");
-    if (settingsCheck[0].values[0][0] === 0) {
-      db.run("INSERT INTO settings (key, value) VALUES ('kode_surat', '096')");
-      db.run("INSERT INTO settings (key, value) VALUES ('kode_desa', '18')");
-      db.run("INSERT INTO settings (key, value) VALUES ('tahun', '" + new Date().getFullYear() + "')");
-      db.run("INSERT INTO settings (key, value) VALUES ('nama_desa', 'Kembanglimus')");
-      db.run("INSERT INTO settings (key, value) VALUES ('nama_kecamatan', 'Borobudur')");
-      db.run("INSERT INTO settings (key, value) VALUES ('nama_kabupaten', 'Magelang')");
-      db.run("INSERT INTO settings (key, value) VALUES ('kepala_desa', 'SOETJI ARIMBI')");
-      db.run("INSERT INTO settings (key, value) VALUES ('alamat_desa', 'Jl. Sudirman KM. 03, Kembanglimus')");
-      db.run("INSERT INTO settings (key, value) VALUES ('kode_pos_desa', '56553')");
-      db.run("INSERT INTO settings (key, value) VALUES ('telp_desa', '(0293) 7182286')");
-      db.run("INSERT INTO settings (key, value) VALUES ('email_desa', 'desakembanglimus1@gmail.com')");
-      console.log('✅ Default settings created.');
-    }
-
-    // Default Users
-    const usersCheck = db.exec('SELECT COUNT(*) FROM users');
-    if (usersCheck[0].values[0][0] === 0) {
-      db.run("INSERT INTO users (username, password, role) VALUES ('admin', 'admin123', 'SuperUser')");
-      db.run("INSERT INTO users (username, password, role) VALUES ('user', 'user123', 'User')");
-      console.log('✅ Default users created.');
-    }
-
+    console.log('💾 Saving initial state...');
     saveDatabase();
     console.log('🚀 Database initialization complete.');
   } catch (err) {
-    console.error('❌ Critical error during database init:', err);
+    console.error('❌ CRITICAL: Database initialization failed:', err);
     throw err;
   }
 }
@@ -164,11 +128,31 @@ function generateNextNomorSurat() {
   return `${kode_surat}/${urutan}/${kode_desa}/${tahun}`;
 }
 
+// Helper: generate next Narasumber number
+function generateNextNarasumberNumber() {
+  const settings = getSettings();
+  const kode_surat = settings.kode_surat_narasumber || '005'; // Default for narasumber
+  const kode_desa = settings.kode_desa || '18';
+  const tahun = settings.tahun || new Date().getFullYear().toString();
+
+  const countResult = db.exec(
+    `SELECT COUNT(*) FROM narasumber WHERE nomor_surat LIKE '%/${tahun}'`
+  );
+  const count = countResult.length > 0 ? countResult[0].values[0][0] : 0;
+  const urutan = String(parseInt(count) + 1).padStart(3, '0');
+
+  return `${kode_surat}/${urutan}/${kode_desa}/${tahun}`;
+}
+
 // Save database to file
 function saveDatabase() {
-  const data = db.export();
-  const buffer = Buffer.from(data);
-  fs.writeFileSync(DB_PATH, buffer);
+  try {
+    const data = db.export();
+    const buffer = Buffer.from(data);
+    fs.writeFileSync(DB_PATH, buffer);
+  } catch (err) {
+    console.error('❌ Gagal menyimpan database ke file:', err.message);
+  }
 }
 
 // ============================================================
@@ -335,7 +319,7 @@ app.put('/api/settings', (req, res) => {
     return res.status(403).json({ success: false, message: 'Akses ditolak. Hanya SuperUser.' });
   }
 
-  const allowed = ['kode_surat', 'kode_desa', 'tahun', 'nama_desa', 'nama_kecamatan', 'nama_kabupaten', 'kepala_desa'];
+  const allowed = ['kode_surat', 'kode_surat_narasumber', 'kode_desa', 'tahun', 'nama_desa', 'nama_kecamatan', 'nama_kabupaten', 'kepala_desa', 'alamat_desa', 'kode_pos_desa', 'telp_desa', 'email_desa'];
   const updates = req.body;
 
   for (const [key, value] of Object.entries(updates)) {
@@ -359,6 +343,15 @@ app.get('/api/sppd/next-number', (req, res) => {
     return res.status(401).json({ success: false, message: 'Belum login.' });
   }
   const nextNumber = generateNextNomorSurat();
+  res.json({ success: true, nomor: nextNumber });
+});
+
+// Get next Narasumber number
+app.get('/api/narasumber/next-number', (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ success: false, message: 'Belum login.' });
+  }
+  const nextNumber = generateNextNarasumberNumber();
   res.json({ success: true, nomor: nextNumber });
 });
 
@@ -421,6 +414,110 @@ app.get('/api/sppd', (req, res) => {
   }
 
   res.json({ success: true, data: items });
+});
+
+// ============================================================
+// NARASUMBER API ROUTES
+// ============================================================
+
+// Create Narasumber
+app.post('/api/narasumber', (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ success: false, message: 'Belum login.' });
+  }
+
+  const { nomor_surat, tanggal_surat, nama_narasumber, bidang, kegiatan, tempat_pelaksanaan, tanggal_pelaksanaan, waktu_pelaksanaan } = req.body;
+
+  if (!nomor_surat || !tanggal_surat || !nama_narasumber || !bidang || !kegiatan || !tempat_pelaksanaan || !tanggal_pelaksanaan || !waktu_pelaksanaan) {
+    return res.status(400).json({ success: false, message: 'Semua field wajib diisi.' });
+  }
+
+  try {
+    db.run(
+      `INSERT INTO narasumber (nomor_surat, tanggal_surat, nama_narasumber, bidang, kegiatan, tempat_pelaksanaan, tanggal_pelaksanaan, waktu_pelaksanaan) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [nomor_surat, tanggal_surat, nama_narasumber, bidang, kegiatan, tempat_pelaksanaan, tanggal_pelaksanaan, waktu_pelaksanaan]
+    );
+    saveDatabase();
+    
+    const lastId = db.exec('SELECT last_insert_rowid() as id');
+    const id = lastId[0].values[0][0];
+
+    res.json({ success: true, message: 'Data Narasumber berhasil disimpan.', id });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Gagal menyimpan ke database.', error: err.message });
+  }
+});
+
+// Get all Narasumber
+app.get('/api/narasumber', (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ success: false, message: 'Belum login.' });
+  }
+
+  const result = db.exec('SELECT * FROM narasumber ORDER BY id DESC');
+  const items = [];
+
+  if (result.length > 0) {
+    const columns = result[0].columns;
+    result[0].values.forEach(row => {
+      const obj = {};
+      columns.forEach((col, i) => { obj[col] = row[i]; });
+      items.push(obj);
+    });
+  }
+
+  res.json({ success: true, data: items });
+});
+
+// Get single Narasumber by ID
+app.get('/api/narasumber/:id', (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ success: false, message: 'Belum login.' });
+  }
+
+  const stmt = db.prepare('SELECT * FROM narasumber WHERE id = ?');
+  stmt.bind([parseInt(req.params.id)]);
+  let item = null;
+  if (stmt.step()) item = stmt.getAsObject();
+  stmt.free();
+
+  if (!item) return res.status(404).json({ success: false, message: 'Data tidak ditemukan.' });
+  res.json({ success: true, data: item });
+});
+
+// Update Narasumber
+app.put('/api/narasumber/:id', (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ success: false, message: 'Belum login.' });
+  }
+
+  const { nomor_surat, tanggal_surat, nama_narasumber, bidang, kegiatan, tempat_pelaksanaan, tanggal_pelaksanaan, waktu_pelaksanaan } = req.body;
+
+  try {
+    db.run(
+      `UPDATE narasumber SET nomor_surat=?, tanggal_surat=?, nama_narasumber=?, bidang=?, kegiatan=?, tempat_pelaksanaan=?, tanggal_pelaksanaan=?, waktu_pelaksanaan=? WHERE id=?`,
+      [nomor_surat, tanggal_surat, nama_narasumber, bidang, kegiatan, tempat_pelaksanaan, tanggal_pelaksanaan, waktu_pelaksanaan, req.params.id]
+    );
+    saveDatabase();
+    res.json({ success: true, message: 'Data Narasumber berhasil diperbarui.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Gagal memperbarui database.', error: err.message });
+  }
+});
+
+// Delete Narasumber
+app.delete('/api/narasumber/:id', (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ success: false, message: 'Belum login.' });
+  }
+
+  try {
+    db.run('DELETE FROM narasumber WHERE id = ?', [req.params.id]);
+    saveDatabase();
+    res.json({ success: true, message: 'Data Narasumber berhasil dihapus.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Gagal menghapus data.', error: err.message });
+  }
 });
 
 // Get single SPPD by ID
@@ -601,6 +698,72 @@ app.get('/api/sppd/generate-docx/:id', (req, res) => {
   }
 });
 
+// Generate Narasumber DOCX
+app.get('/api/narasumber/generate-docx/:id', (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).send('Belum login.');
+  }
+
+  const templatePath = path.join(__dirname, 'templates', 'narasumber_template.docx');
+  if (!fs.existsSync(templatePath)) {
+    return res.status(404).send('Template Narasumber tidak ditemukan.');
+  }
+
+  try {
+    const stmt = db.prepare('SELECT * FROM narasumber WHERE id = ?');
+    stmt.bind([parseInt(req.params.id)]);
+    let item = null;
+    if (stmt.step()) item = stmt.getAsObject();
+    stmt.free();
+
+    if (!item) return res.status(404).send('Data Narasumber tidak ditemukan.');
+
+    const settings = getSettings();
+    
+    // Prepare Data for Template
+    const templateData = {
+      nomor_surat: item.nomor_surat,
+      tanggal_surat: formatDateID(item.tanggal_surat),
+      nama_narasumber: item.nama_narasumber,
+      bidang: item.bidang,
+      kegiatan: item.kegiatan,
+      tempat_pelaksanaan: item.tempat_pelaksanaan,
+      tanggal_pelaksanaan: formatDateID(item.tanggal_pelaksanaan),
+      waktu_pelaksanaan: item.waktu_pelaksanaan,
+      nama_desa: settings.nama_desa || 'Kembanglimus',
+      nama_kecamatan: settings.nama_kecamatan || 'Borobudur',
+      nama_kabupaten: settings.nama_kabupaten || 'Magelang',
+      kepala_desa: settings.kepala_desa || 'SOETJI ARIMBI',
+      alamat_desa: settings.alamat_desa || '-',
+      kode_pos_desa: settings.kode_pos_desa || '-',
+      telp_desa: settings.telp_desa || '-',
+      email_desa: settings.email_desa || '-',
+      tahun_berjalan: settings.tahun || new Date().getFullYear().toString()
+    };
+
+    const content = fs.readFileSync(templatePath); 
+    const zip = new PizZip(content);
+    const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
+
+    doc.render(templateData);
+
+    const buf = doc.getZip().generate({
+      type: 'nodebuffer',
+      compression: 'DEFLATE',
+    });
+
+    const safeFilename = `Narasumber_${item.nama_narasumber.replace(/[^a-zA-Z0-9]/g, '_')}.docx`;
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}"`);
+    res.setHeader('Content-Length', buf.length);
+    res.send(buf);
+
+  } catch (err) {
+    console.error('❌ Narasumber DOCX Generation Error:', err);
+    res.status(500).send('Gagal membuat dokumen. Periksa template.');
+  }
+});
+
 
 // Get stats count
 app.get('/api/stats', (req, res) => {
@@ -609,11 +772,13 @@ app.get('/api/stats', (req, res) => {
   }
 
   const sppdCount = db.exec('SELECT COUNT(*) FROM sppd');
+  const narasumberCount = db.exec('SELECT COUNT(*) FROM narasumber');
 
   res.json({
     success: true,
     stats: {
       sppd: sppdCount[0].values[0][0],
+      narasumber: narasumberCount[0].values[0][0],
       rab: 0,
       permohonan: 0,
       sk: 0

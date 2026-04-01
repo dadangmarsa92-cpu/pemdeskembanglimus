@@ -130,6 +130,31 @@ function renderSettingsUI() {
         <small class="field-note" style="margin-top:8px;">Pastikan file berformat <strong>.docx</strong> (Word modern).</small>
       </div>
     `;
+  } else if (currentSettingsTab === 'narasumber') {
+    const previewNomorNara = `${s.kode_surat_narasumber || '005'}/001/${s.kode_desa || '18'}/${s.tahun || new Date().getFullYear()}`;
+    contentHtml = `
+      <div class="settings-group">
+        <div class="settings-group-title">🔢 Penomoran Narasumber</div>
+        <div class="settings-grid">
+          <div class="form-group">
+            <label for="set_kode_surat_narasumber">Kode Surat</label>
+            <input type="text" id="set_kode_surat_narasumber" class="form-input" value="${s.kode_surat_narasumber || '005'}" ${!isSuperUser ? 'disabled' : ''}>
+          </div>
+          <div class="form-group">
+            <label for="set_kode_desa">Kode Desa</label>
+            <input type="text" id="set_kode_desa" class="form-input" value="${s.kode_desa || ''}" ${!isSuperUser ? 'disabled' : ''}>
+          </div>
+          <div class="form-group">
+            <label for="set_tahun">Tahun Berjalan</label>
+            <input type="number" id="set_tahun" class="form-input" value="${s.tahun || ''}" ${!isSuperUser ? 'disabled' : ''}>
+          </div>
+        </div>
+        <div style="margin-top:20px; padding:15px; background:rgba(255,255,255,0.05); border-radius:8px;">
+          <small style="color:var(--text-muted); display:block; margin-bottom:5px;">Preview Format Nomor Surat Narasumber :</small>
+          <strong style="color:var(--primary-light); font-size:1.1rem; letter-spacing:1px;">${previewNomorNara}</strong>
+        </div>
+      </div>
+    `;
   } else {
     contentHtml = `
       <div class="empty-state" style="padding: 60px 20px;">
@@ -237,6 +262,7 @@ async function saveSettings() {
   // Collect values only from visible inputs (to avoid overwriting absent fields in current tab)
   const inputs = {
     kode_surat: 'set_kode_surat',
+    kode_surat_narasumber: 'set_kode_surat_narasumber',
     kode_desa: 'set_kode_desa',
     tahun: 'set_tahun',
     nama_desa: 'set_nama_desa',
@@ -288,6 +314,7 @@ async function resetSettings() {
   
   const defaults = {
     kode_surat: '096',
+    kode_surat_narasumber: '005',
     kode_desa: '18',
     tahun: String(new Date().getFullYear()),
     nama_desa: 'Kembanglimus',

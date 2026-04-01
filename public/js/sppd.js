@@ -116,7 +116,6 @@ function hitungTanggalKembali() {
 function initSppdForm() {
   const form = document.getElementById('sppdForm');
   const btnCancel = document.getElementById('btnCancelSppd');
-  const btnPrintYes = document.getElementById('btnPrintYes');
   const btnPrintNo = document.getElementById('btnPrintNo');
 
   // Hitung tanggal kembali saat lama atau tanggal berangkat berubah
@@ -134,7 +133,7 @@ function initSppdForm() {
     if (isEditMode) {
       await updateSppd();
     } else {
-      await saveSppd();
+    await saveSppd();
     }
   });
 
@@ -361,9 +360,11 @@ async function updateSppd() {
 
     if (result.success) {
       showToast('✅ Data SPPD berhasil diperbarui!', 'success');
+      lastSavedId = editingId; // Store the ID for the download modal
       resetFormToCreateMode();
       loadSppdData();
       loadStats();
+      openPrintModal();
     } else {
       showToast(result.message, 'error');
     }
@@ -662,11 +663,16 @@ function closeDetailModal() {
   document.getElementById('detailSppdModal').classList.remove('active');
 }
 
-// ── Modal ──
+// ── Modal Konfirmasi Simpan (Cetak/Unduh) ──
 function openPrintModal() {
   const btnDownloadWord = document.getElementById('btnDownloadWord');
-  if (btnDownloadWord && lastSavedId) {
-    btnDownloadWord.href = `/api/sppd/generate-docx/${lastSavedId}`;
+  if (btnDownloadWord) {
+    if (lastSavedId) {
+      btnDownloadWord.href = `/api/sppd/generate-docx/${lastSavedId}`;
+      btnDownloadWord.style.display = 'flex'; // Ensure it's visible
+    } else {
+      btnDownloadWord.style.display = 'none'; // Hide if no ID (safety)
+    }
   }
   document.getElementById('printModal').classList.add('active');
 }
