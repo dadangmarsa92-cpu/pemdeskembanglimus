@@ -30,7 +30,6 @@ function renderSettingsUI() {
   if (!container) return;
 
   const s = currentSettings;
-  const isSuperUser = (document.getElementById('sidebarRole')?.textContent || '').includes('SuperUser');
 
   // Update Active Tab Class
   const tabButtons = document.querySelectorAll('.tab-btn');
@@ -58,35 +57,35 @@ function renderSettingsUI() {
         <div class="settings-grid">
           <div class="form-group">
             <label for="set_nama_desa">Nama Desa</label>
-            <input type="text" id="set_nama_desa" class="form-input" value="${s.nama_desa || ''}" ${!isSuperUser ? 'disabled' : ''}>
+            <input type="text" id="set_nama_desa" class="form-input" value="${s.nama_desa || ''}">
           </div>
           <div class="form-group">
             <label for="set_nama_kecamatan">Nama Kecamatan</label>
-            <input type="text" id="set_nama_kecamatan" class="form-input" value="${s.nama_kecamatan || ''}" ${!isSuperUser ? 'disabled' : ''}>
+            <input type="text" id="set_nama_kecamatan" class="form-input" value="${s.nama_kecamatan || ''}">
           </div>
           <div class="form-group">
             <label for="set_nama_kabupaten">Nama Kabupaten</label>
-            <input type="text" id="set_nama_kabupaten" class="form-input" value="${s.nama_kabupaten || ''}" ${!isSuperUser ? 'disabled' : ''}>
+            <input type="text" id="set_nama_kabupaten" class="form-input" value="${s.nama_kabupaten || ''}">
           </div>
           <div class="form-group">
             <label for="set_kepala_desa">Nama Kepala Desa</label>
-            <input type="text" id="set_kepala_desa" class="form-input" value="${s.kepala_desa || ''}" ${!isSuperUser ? 'disabled' : ''}>
+            <input type="text" id="set_kepala_desa" class="form-input" value="${s.kepala_desa || ''}">
           </div>
           <div class="form-group" style="grid-column: span 2;">
             <label for="set_alamat_desa">Alamat Desa</label>
-            <input type="text" id="set_alamat_desa" class="form-input" value="${s.alamat_desa || ''}" ${!isSuperUser ? 'disabled' : ''}>
+            <input type="text" id="set_alamat_desa" class="form-input" value="${s.alamat_desa || ''}">
           </div>
           <div class="form-group">
             <label for="set_kode_pos_desa">Kode Pos</label>
-            <input type="text" id="set_kode_pos_desa" class="form-input" value="${s.kode_pos_desa || ''}" ${!isSuperUser ? 'disabled' : ''}>
+            <input type="text" id="set_kode_pos_desa" class="form-input" value="${s.kode_pos_desa || ''}">
           </div>
           <div class="form-group">
             <label for="set_telp_desa">Nomor Telepon</label>
-            <input type="text" id="set_telp_desa" class="form-input" value="${s.telp_desa || ''}" ${!isSuperUser ? 'disabled' : ''}>
+            <input type="text" id="set_telp_desa" class="form-input" value="${s.telp_desa || ''}">
           </div>
           <div class="form-group" style="grid-column: span 2;">
             <label for="set_email_desa">Email Desa</label>
-            <input type="email" id="set_email_desa" class="form-input" value="${s.email_desa || ''}" ${!isSuperUser ? 'disabled' : ''}>
+            <input type="email" id="set_email_desa" class="form-input" value="${s.email_desa || ''}">
           </div>
         </div>
       </div>
@@ -99,15 +98,15 @@ function renderSettingsUI() {
         <div class="settings-grid">
           <div class="form-group">
             <label for="set_kode_surat">Kode Surat</label>
-            <input type="text" id="set_kode_surat" class="form-input" value="${s.kode_surat || ''}" ${!isSuperUser ? 'disabled' : ''}>
+            <input type="text" id="set_kode_surat" class="form-input" value="${s.kode_surat || ''}">
           </div>
           <div class="form-group">
             <label for="set_kode_desa">Kode Desa</label>
-            <input type="text" id="set_kode_desa" class="form-input" value="${s.kode_desa || ''}" ${!isSuperUser ? 'disabled' : ''}>
+            <input type="text" id="set_kode_desa" class="form-input" value="${s.kode_desa || ''}">
           </div>
           <div class="form-group">
             <label for="set_tahun">Tahun Berjalan</label>
-            <input type="number" id="set_tahun" class="form-input" value="${s.tahun || ''}" ${!isSuperUser ? 'disabled' : ''}>
+            <input type="number" id="set_tahun" class="form-input" value="${s.tahun || ''}">
           </div>
         </div>
         <div style="margin-top:20px; padding:15px; background:rgba(255,255,255,0.05); border-radius:8px;">
@@ -138,15 +137,15 @@ function renderSettingsUI() {
         <div class="settings-grid">
           <div class="form-group">
             <label for="set_kode_surat_narasumber">Kode Surat</label>
-            <input type="text" id="set_kode_surat_narasumber" class="form-input" value="${s.kode_surat_narasumber || '005'}" ${!isSuperUser ? 'disabled' : ''}>
+            <input type="text" id="set_kode_surat_narasumber" class="form-input" value="${s.kode_surat_narasumber || '005'}">
           </div>
           <div class="form-group">
             <label for="set_kode_desa">Kode Desa</label>
-            <input type="text" id="set_kode_desa" class="form-input" value="${s.kode_desa || ''}" ${!isSuperUser ? 'disabled' : ''}>
+            <input type="text" id="set_kode_desa" class="form-input" value="${s.kode_desa || ''}">
           </div>
           <div class="form-group">
             <label for="set_tahun">Tahun Berjalan</label>
-            <input type="number" id="set_tahun" class="form-input" value="${s.tahun || ''}" ${!isSuperUser ? 'disabled' : ''}>
+            <input type="number" id="set_tahun" class="form-input" value="${s.tahun || ''}">
           </div>
         </div>
         <div style="margin-top:20px; padding:15px; background:rgba(255,255,255,0.05); border-radius:8px;">
@@ -165,7 +164,7 @@ function renderSettingsUI() {
     `;
   }
 
-  const actionButtons = isSuperUser ? `
+  const actionButtons = `
     <div class="form-actions" style="margin-top: 30px;">
       <button type="button" class="btn-save" id="btnSaveSettings">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;vertical-align:middle;">
@@ -179,15 +178,13 @@ function renderSettingsUI() {
         Reset
       </button>
     </div>
-  ` : '';
+  `;
 
   container.innerHTML = contentHtml + actionButtons;
 
-  if (isSuperUser) {
-    document.getElementById('btnSaveSettings')?.addEventListener('click', saveSettings);
-    document.getElementById('btnResetSettings')?.addEventListener('click', resetSettings);
-    document.getElementById('btnUploadTemplate')?.addEventListener('click', uploadWordTemplate);
-  }
+  document.getElementById('btnSaveSettings')?.addEventListener('click', saveSettings);
+  document.getElementById('btnResetSettings')?.addEventListener('click', resetSettings);
+  document.getElementById('btnUploadTemplate')?.addEventListener('click', uploadWordTemplate);
 }
 
 // ── Upload Word Template ──

@@ -195,19 +195,19 @@ app.use(session({
 
 // Login
 app.post('/api/login', (req, res) => {
-  const { username, password, role } = req.body;
+  const { username, password } = req.body;
 
-  if (!username || !password || !role) {
+  if (!username || !password) {
     return res.status(400).json({
       success: false,
-      message: 'Username, password, dan hak akses wajib diisi.'
+      message: 'Username dan password wajib diisi.'
     });
   }
 
   const stmt = db.prepare(
-    'SELECT * FROM users WHERE username = ? AND password = ? AND role = ?'
+    'SELECT * FROM users WHERE username = ? AND password = ?'
   );
-  stmt.bind([username, password, role]);
+  stmt.bind([username, password]);
 
   let user = null;
   if (stmt.step()) {
@@ -219,7 +219,7 @@ app.post('/api/login', (req, res) => {
   if (!user) {
     return res.status(401).json({
       success: false,
-      message: 'Username, password, atau hak akses salah.'
+      message: 'Username atau password salah.'
     });
   }
 
@@ -264,9 +264,9 @@ app.post('/api/logout', (req, res) => {
   });
 });
 
-// Get all users (SuperUser only)
+// Get all users
 app.get('/api/users', (req, res) => {
-  if (!req.session.userId || req.session.role !== 'SuperUser') {
+  if (!req.session.userId) {
     return res.status(403).json({ success: false, message: 'Akses ditolak.' });
   }
 
@@ -291,9 +291,9 @@ app.get('/api/users', (req, res) => {
 // TEMPLATE API ROUTES
 // ============================================================
 
-// Upload Word Template (SuperUser only)
+// Upload Word Template
 app.post('/api/settings/upload-template', (req, res) => {
-  if (!req.session.userId || req.session.role !== 'SuperUser') {
+  if (!req.session.userId) {
     return res.status(403).json({ success: false, message: 'Akses ditolak.' });
   }
 
@@ -331,10 +331,10 @@ app.get('/api/settings', (req, res) => {
   res.json({ success: true, settings });
 });
 
-// Update settings (SuperUser only)
+// Update settings
 app.put('/api/settings', (req, res) => {
-  if (!req.session.userId || req.session.role !== 'SuperUser') {
-    return res.status(403).json({ success: false, message: 'Akses ditolak. Hanya SuperUser.' });
+  if (!req.session.userId) {
+    return res.status(403).json({ success: false, message: 'Akses ditolak.' });
   }
 
   const allowed = ['kode_surat', 'kode_surat_narasumber', 'kode_surat_ahli_waris', 'kode_desa', 'tahun', 'nama_desa', 'nama_kecamatan', 'nama_kabupaten', 'kepala_desa', 'alamat_desa', 'kode_pos_desa', 'telp_desa', 'email_desa'];

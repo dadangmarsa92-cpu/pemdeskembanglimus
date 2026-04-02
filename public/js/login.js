@@ -27,7 +27,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const username = document.getElementById('username').value.trim();
     const password = passwordInput.value.trim();
-    const role = document.getElementById('role').value;
 
     // Validation
     if (!username) {
@@ -36,10 +35,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (!password) {
       showToast('Password tidak boleh kosong.', 'error');
-      return;
-    }
-    if (!role) {
-      showToast('Silakan pilih hak akses.', 'error');
       return;
     }
 
@@ -51,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const response = await fetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password, role })
+        body: JSON.stringify({ username, password })
       });
 
       const data = await response.json();

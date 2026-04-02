@@ -385,10 +385,6 @@ async function checkSession() {
     const user = data.user;
     renderDashboard(user);
 
-    // If SuperUser, load users table
-    if (user.role === 'SuperUser') {
-      loadUsersTable();
-    }
   } catch (error) {
     showToast('Gagal memuat sesi. Mengarahkan ke halaman login...', 'error');
     setTimeout(() => {
@@ -400,24 +396,23 @@ async function checkSession() {
 // ── Render Dashboard ──
 function renderDashboard(user) {
   // Nav bar
-  document.getElementById('navUsername').textContent = user.username;
-  document.getElementById('navRole').textContent = user.role;
-  document.getElementById('userAvatar').textContent = user.username.charAt(0).toUpperCase();
+  const navUsernameEl = document.getElementById('navUsername');
+  if(navUsernameEl) navUsernameEl.textContent = user.username;
+  const userAvatarEl = document.getElementById('userAvatar');
+  if(userAvatarEl) userAvatarEl.textContent = user.username.charAt(0).toUpperCase();
 
   // Sidebar
-  document.getElementById('sidebarUsername').textContent = user.username;
-  document.getElementById('sidebarRole').textContent = user.role;
-  document.getElementById('sidebarAvatar').textContent = user.username.charAt(0).toUpperCase();
+  const sidebarUsernameEl = document.getElementById('sidebarUsername');
+  if(sidebarUsernameEl) sidebarUsernameEl.textContent = user.username;
+  const sidebarAvatarEl = document.getElementById('sidebarAvatar');
+  if(sidebarAvatarEl) sidebarAvatarEl.textContent = user.username.charAt(0).toUpperCase();
 
   // Welcome
   document.getElementById('welcomeName').textContent = user.username;
 
-  if (user.role === 'SuperUser') {
-    document.getElementById('welcomeDesc').textContent =
-      'Anda login sebagai SuperUser. Anda memiliki akses penuh ke seluruh fitur sistem pelayanan desa.';
-  } else {
-    document.getElementById('welcomeDesc').textContent =
-      'Anda login sebagai User. Anda dapat mengakses layanan pelayanan desa yang tersedia.';
+  const welcomeDescEl = document.getElementById('welcomeDesc');
+  if (welcomeDescEl) {
+    welcomeDescEl.textContent = 'Anda memiliki akses penuh ke seluruh fitur sistem pelayanan desa.';
   }
 
   updateDashboardStats();
@@ -458,44 +453,7 @@ function reformatToISO(dmY) {
   return `${yearNum}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 }
 
-// ── Load Users Table (SuperUser) ──
-async function loadUsersTable() {
-  try {
-    const res = await fetch('/api/users');
-    const data = await res.json();
 
-    if (data.success) {
-      const section = document.getElementById('usersTableSection');
-      section.style.display = 'block';
-
-      const tbody = document.getElementById('usersTableBody');
-      tbody.innerHTML = '';
-
-      data.users.forEach(user => {
-        const tr = document.createElement('tr');
-        const roleClass = user.role === 'SuperUser' ? 'superuser' : 'user';
-        const roleIcon = user.role === 'SuperUser' ? '🛡️' : '👤';
-        const date = user.created_at
-          ? new Date(user.created_at).toLocaleDateString('id-ID', {
-              day: '2-digit',
-              month: 'long',
-              year: 'numeric'
-            })
-          : '-';
-
-        tr.innerHTML = `
-          <td>${user.id}</td>
-          <td><strong>${user.username}</strong></td>
-          <td><span class="role-badge ${roleClass}">${roleIcon} ${user.role}</span></td>
-          <td>${date}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-  } catch (error) {
-    console.error('Failed to load users:', error);
-  }
-}
 
 // ── Logout ──
 async function handleLogout() {
