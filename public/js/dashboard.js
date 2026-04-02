@@ -17,7 +17,8 @@ document.addEventListener('DOMContentLoaded', () => {
 const pageTitles = {
   dashboard: 'Dashboard',
   sppd: 'SPPD',
-  narasumber: 'Narasumber',
+  narasumber: 'Permohonan Narasumber',
+  'surat-ahli-waris': 'Surat Ahli Waris',
   permohonan: 'Permohonan Narasumber',
   sk: 'SK Narasumber',
   laporan: 'Laporan',
@@ -47,9 +48,20 @@ function initSidebar() {
   // Close sidebar on link click (mobile)
   document.querySelectorAll('.sidebar-link').forEach(link => {
     link.addEventListener('click', () => {
-      if (window.innerWidth <= 1024) {
+      if (window.innerWidth <= 1024 && !link.classList.contains('sidebar-dropdown-toggle')) {
         closeSidebar();
       }
+    });
+  });
+
+  // Sidebar dropdown toggle
+  const dropdownToggles = document.querySelectorAll('.sidebar-dropdown-toggle');
+  dropdownToggles.forEach(toggle => {
+    toggle.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const parent = toggle.closest('.sidebar-dropdown');
+      parent.classList.toggle('open');
     });
   });
 }
@@ -77,10 +89,22 @@ function initNavigation() {
 
 // ── Navigate to Page ──
 function navigateTo(page) {
-  // Update sidebar active state
+  // Update sidebar active state for all links (main + sub)
   document.querySelectorAll('.sidebar-link').forEach(link => {
-    link.classList.toggle('active', link.dataset.page === page);
+    link.classList.remove('active');
+    if (link.dataset.page === page) {
+      link.classList.add('active');
+    }
   });
+
+  // Auto-open dropdown if sub-page is within it
+  const suratPages = ['narasumber', 'surat-ahli-waris'];
+  const suratDropdown = document.querySelector('.sidebar-dropdown');
+  if (suratDropdown) {
+    if (suratPages.includes(page)) {
+      suratDropdown.classList.add('open');
+    }
+  }
 
   // Show/hide page sections
   document.querySelectorAll('.page-section').forEach(section => {
@@ -116,6 +140,11 @@ function navigateTo(page) {
   if (page === 'narasumber' && typeof loadNarasumberData === 'function') {
     loadNarasumberData();
     loadNextNaraNumber();
+  }
+
+  if (page === 'surat-ahli-waris' && typeof loadAhliWarisData === 'function') {
+    loadAhliWarisData();
+    loadNextAhliWarisNumber();
   }
 }
 

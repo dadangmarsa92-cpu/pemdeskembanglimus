@@ -34,7 +34,8 @@ async function initDatabase() {
       `CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE NOT NULL, password TEXT NOT NULL, role TEXT NOT NULL CHECK(role IN ('SuperUser', 'User')), created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`,
       `CREATE TABLE IF NOT EXISTS sppd (id INTEGER PRIMARY KEY AUTOINCREMENT, nomor_surat TEXT NOT NULL, nama_pegawai TEXT NOT NULL, jabatan TEXT NOT NULL, acara TEXT NOT NULL, kendaraan TEXT NOT NULL, tujuan TEXT NOT NULL, lama_perjalanan TEXT NOT NULL, tanggal_berangkat TEXT NOT NULL, tanggal_kembali TEXT NOT NULL, dasar_surat TEXT, nomor_surat_dasar TEXT, nominal_rupiah TEXT, file_base64 TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`,
       `CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)`,
-      `CREATE TABLE IF NOT EXISTS narasumber (id INTEGER PRIMARY KEY AUTOINCREMENT, nomor_surat TEXT NOT NULL, tanggal_surat TEXT NOT NULL, nama_narasumber TEXT NOT NULL, bidang TEXT NOT NULL, kegiatan TEXT NOT NULL, tempat_pelaksanaan TEXT NOT NULL, tanggal_pelaksanaan TEXT NOT NULL, waktu_pelaksanaan TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`
+      `CREATE TABLE IF NOT EXISTS narasumber (id INTEGER PRIMARY KEY AUTOINCREMENT, nomor_surat TEXT NOT NULL, tanggal_surat TEXT NOT NULL, nama_narasumber TEXT NOT NULL, bidang TEXT NOT NULL, kegiatan TEXT NOT NULL, tempat_pelaksanaan TEXT NOT NULL, tanggal_pelaksanaan TEXT NOT NULL, waktu_pelaksanaan TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`,
+      `CREATE TABLE IF NOT EXISTS surat_ahli_waris (id INTEGER PRIMARY KEY AUTOINCREMENT, nomor_surat TEXT NOT NULL, tanggal_surat TEXT NOT NULL, nama_pewaris TEXT NOT NULL, tempat_lahir_pewaris TEXT NOT NULL, tgl_lahir_pewaris TEXT NOT NULL, tgl_meninggal TEXT NOT NULL, alamat_pewaris TEXT NOT NULL, nama_ahli_waris TEXT NOT NULL, hubungan TEXT NOT NULL, nik_ahli_waris TEXT NOT NULL, alamat_ahli_waris TEXT NOT NULL, keterangan TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`
     ];
 
     for (const sql of tables) {
@@ -49,6 +50,7 @@ async function initDatabase() {
     const seedCommands = [
       `INSERT OR IGNORE INTO settings (key, value) VALUES ('kode_surat', '096')`,
       `INSERT OR IGNORE INTO settings (key, value) VALUES ('kode_surat_narasumber', '005')`,
+      `INSERT OR IGNORE INTO settings (key, value) VALUES ('kode_surat_ahli_waris', '470')`,
       `INSERT OR IGNORE INTO settings (key, value) VALUES ('kode_desa', '18')`,
       `INSERT OR IGNORE INTO settings (key, value) VALUES ('tahun', '${currentYear}')`,
       `INSERT OR IGNORE INTO settings (key, value) VALUES ('nama_desa', 'Kembanglimus')`,
@@ -137,6 +139,22 @@ function generateNextNarasumberNumber() {
 
   const countResult = db.exec(
     `SELECT COUNT(*) FROM narasumber WHERE nomor_surat LIKE '%/${tahun}'`
+  );
+  const count = countResult.length > 0 ? countResult[0].values[0][0] : 0;
+  const urutan = String(parseInt(count) + 1).padStart(3, '0');
+
+  return `${kode_surat}/${urutan}/${kode_desa}/${tahun}`;
+}
+
+// Helper: generate next Surat Ahli Waris number
+function generateNextAhliWarisNumber() {
+  const settings = getSettings();
+  const kode_surat = settings.kode_surat_ahli_waris || '470';
+  const kode_desa = settings.kode_desa || '18';
+  const tahun = settings.tahun || new Date().getFullYear().toString();
+
+  const countResult = db.exec(
+    `SELECT COUNT(*) FROM surat_ahli_waris WHERE nomor_surat LIKE '%/${tahun}'`
   );
   const count = countResult.length > 0 ? countResult[0].values[0][0] : 0;
   const urutan = String(parseInt(count) + 1).padStart(3, '0');
@@ -319,7 +337,7 @@ app.put('/api/settings', (req, res) => {
     return res.status(403).json({ success: false, message: 'Akses ditolak. Hanya SuperUser.' });
   }
 
-  const allowed = ['kode_surat', 'kode_surat_narasumber', 'kode_desa', 'tahun', 'nama_desa', 'nama_kecamatan', 'nama_kabupaten', 'kepala_desa', 'alamat_desa', 'kode_pos_desa', 'telp_desa', 'email_desa'];
+  const allowed = ['kode_surat', 'kode_surat_narasumber', 'kode_surat_ahli_waris', 'kode_desa', 'tahun', 'nama_desa', 'nama_kecamatan', 'nama_kabupaten', 'kepala_desa', 'alamat_desa', 'kode_pos_desa', 'telp_desa', 'email_desa'];
   const updates = req.body;
 
   for (const [key, value] of Object.entries(updates)) {
@@ -355,6 +373,14 @@ app.get('/api/narasumber/next-number', (req, res) => {
   res.json({ success: true, nomor: nextNumber });
 });
 
+// Get next Ahli Waris number
+app.get('/api/surat-ahli-waris/next-number', (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ success: false, message: 'Belum login.' });
+  }
+  const nextNumber = generateNextAhliWarisNumber();
+  res.json({ success: true, nomor: nextNumber });
+});
 // ============================================================
 // SPPD API ROUTES
 // ============================================================
@@ -773,17 +799,128 @@ app.get('/api/stats', (req, res) => {
 
   const sppdCount = db.exec('SELECT COUNT(*) FROM sppd');
   const narasumberCount = db.exec('SELECT COUNT(*) FROM narasumber');
+  
+  let ahliWarisCount = 0;
+  try {
+    const awResult = db.exec('SELECT COUNT(*) FROM surat_ahli_waris');
+    ahliWarisCount = awResult.length > 0 ? awResult[0].values[0][0] : 0;
+  } catch (e) { /* table may not exist yet */ }
 
   res.json({
     success: true,
     stats: {
       sppd: sppdCount[0].values[0][0],
       narasumber: narasumberCount[0].values[0][0],
+      ahli_waris: ahliWarisCount,
       rab: 0,
       permohonan: 0,
       sk: 0
     }
   });
+});
+
+// ============================================================
+// SURAT AHLI WARIS API ROUTES
+// ============================================================
+
+// Create Surat Ahli Waris
+app.post('/api/surat-ahli-waris', (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ success: false, message: 'Belum login.' });
+  }
+
+  const { nomor_surat, tanggal_surat, nama_pewaris, tempat_lahir_pewaris, tgl_lahir_pewaris, tgl_meninggal, alamat_pewaris, nama_ahli_waris, hubungan, nik_ahli_waris, alamat_ahli_waris, keterangan } = req.body;
+
+  if (!nomor_surat || !tanggal_surat || !nama_pewaris || !tempat_lahir_pewaris || !tgl_lahir_pewaris || !tgl_meninggal || !alamat_pewaris || !nama_ahli_waris || !hubungan || !nik_ahli_waris || !alamat_ahli_waris) {
+    return res.status(400).json({ success: false, message: 'Semua field wajib diisi.' });
+  }
+
+  try {
+    db.run(
+      `INSERT INTO surat_ahli_waris (nomor_surat, tanggal_surat, nama_pewaris, tempat_lahir_pewaris, tgl_lahir_pewaris, tgl_meninggal, alamat_pewaris, nama_ahli_waris, hubungan, nik_ahli_waris, alamat_ahli_waris, keterangan) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [nomor_surat, tanggal_surat, nama_pewaris, tempat_lahir_pewaris, tgl_lahir_pewaris, tgl_meninggal, alamat_pewaris, nama_ahli_waris, hubungan, nik_ahli_waris, alamat_ahli_waris, keterangan || '']
+    );
+    saveDatabase();
+    
+    const lastId = db.exec('SELECT last_insert_rowid() as id');
+    const id = lastId[0].values[0][0];
+
+    res.json({ success: true, message: 'Surat Ahli Waris berhasil disimpan.', id });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Gagal menyimpan ke database.', error: err.message });
+  }
+});
+
+// Get all Surat Ahli Waris
+app.get('/api/surat-ahli-waris', (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ success: false, message: 'Belum login.' });
+  }
+
+  const result = db.exec('SELECT * FROM surat_ahli_waris ORDER BY id DESC');
+  const items = [];
+
+  if (result.length > 0) {
+    const columns = result[0].columns;
+    result[0].values.forEach(row => {
+      const obj = {};
+      columns.forEach((col, i) => { obj[col] = row[i]; });
+      items.push(obj);
+    });
+  }
+
+  res.json({ success: true, data: items });
+});
+
+// Get single Surat Ahli Waris by ID
+app.get('/api/surat-ahli-waris/:id', (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ success: false, message: 'Belum login.' });
+  }
+
+  const stmt = db.prepare('SELECT * FROM surat_ahli_waris WHERE id = ?');
+  stmt.bind([parseInt(req.params.id)]);
+  let item = null;
+  if (stmt.step()) item = stmt.getAsObject();
+  stmt.free();
+
+  if (!item) return res.status(404).json({ success: false, message: 'Data tidak ditemukan.' });
+  res.json({ success: true, data: item });
+});
+
+// Update Surat Ahli Waris
+app.put('/api/surat-ahli-waris/:id', (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ success: false, message: 'Belum login.' });
+  }
+
+  const { nomor_surat, tanggal_surat, nama_pewaris, tempat_lahir_pewaris, tgl_lahir_pewaris, tgl_meninggal, alamat_pewaris, nama_ahli_waris, hubungan, nik_ahli_waris, alamat_ahli_waris, keterangan } = req.body;
+
+  try {
+    db.run(
+      `UPDATE surat_ahli_waris SET nomor_surat=?, tanggal_surat=?, nama_pewaris=?, tempat_lahir_pewaris=?, tgl_lahir_pewaris=?, tgl_meninggal=?, alamat_pewaris=?, nama_ahli_waris=?, hubungan=?, nik_ahli_waris=?, alamat_ahli_waris=?, keterangan=? WHERE id=?`,
+      [nomor_surat, tanggal_surat, nama_pewaris, tempat_lahir_pewaris, tgl_lahir_pewaris, tgl_meninggal, alamat_pewaris, nama_ahli_waris, hubungan, nik_ahli_waris, alamat_ahli_waris, keterangan || '', req.params.id]
+    );
+    saveDatabase();
+    res.json({ success: true, message: 'Surat Ahli Waris berhasil diperbarui.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Gagal memperbarui database.', error: err.message });
+  }
+});
+
+// Delete Surat Ahli Waris
+app.delete('/api/surat-ahli-waris/:id', (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ success: false, message: 'Belum login.' });
+  }
+
+  try {
+    db.run('DELETE FROM surat_ahli_waris WHERE id = ?', [req.params.id]);
+    saveDatabase();
+    res.json({ success: true, message: 'Surat Ahli Waris berhasil dihapus.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Gagal menghapus data.', error: err.message });
+  }
 });
 
 // Generic Error Handler

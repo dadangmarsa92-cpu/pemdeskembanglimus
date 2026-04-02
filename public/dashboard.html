@@ -66,15 +66,40 @@
               <span>SPPD</span>
             </a>
           </li>
-          <li>
-            <a href="#" class="sidebar-link" data-page="narasumber">
+          <li class="sidebar-dropdown">
+            <a href="#" class="sidebar-link sidebar-dropdown-toggle" id="suratDropdownToggle">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                <circle cx="8.5" cy="7" r="4"></circle>
-                <polyline points="17 11 19 13 23 9"></polyline>
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                <polyline points="22,6 12,13 2,6"></polyline>
               </svg>
-              <span>Narasumber</span>
+              <span>Surat</span>
+              <svg class="dropdown-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
             </a>
+            <ul class="sidebar-submenu" id="suratSubmenu">
+              <li>
+                <a href="#" class="sidebar-link sidebar-sublink" data-page="narasumber">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="8.5" cy="7" r="4"></circle>
+                    <polyline points="17 11 19 13 23 9"></polyline>
+                  </svg>
+                  <span>Permohonan Narasumber</span>
+                </a>
+              </li>
+              <li>
+                <a href="#" class="sidebar-link sidebar-sublink" data-page="surat-ahli-waris">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                  </svg>
+                  <span>Surat Ahli Waris</span>
+                </a>
+              </li>
+            </ul>
           </li>
           <li class="sidebar-section-label">Lainnya</li>
           <li>
@@ -419,8 +444,8 @@
         <div class="page-section" id="page-narasumber">
           <div class="page-header-section">
             <div>
-              <h1 id="narasumberPageTitle">👥 Manajemen Narasumber</h1>
-              <p>Kelola data dan cetak surat narasumber kegiatan desa</p>
+              <h1 id="narasumberPageTitle">👥 Permohonan Narasumber</h1>
+              <p>Kelola data dan cetak surat permohonan narasumber kegiatan desa</p>
             </div>
           </div>
 
@@ -545,6 +570,183 @@
             <div class="empty-state" id="narasumberEmptyState" style="display:none; padding:60px 40px;">
               <div class="empty-icon">👥</div>
               <h3>Belum Ada Data Narasumber</h3>
+              <p>Data yang tersimpan akan muncul di daftar ini.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══════════════ PAGE: SURAT AHLI WARIS ═══════════════ -->
+        <div class="page-section" id="page-surat-ahli-waris">
+          <div class="page-header-section">
+            <div>
+              <h1>📜 Surat Ahli Waris</h1>
+              <p>Kelola pembuatan surat keterangan ahli waris</p>
+            </div>
+          </div>
+
+          <!-- Quick Stats -->
+          <div class="stats-grid" style="margin-bottom:28px;">
+            <div class="stat-card">
+              <div class="stat-icon green">📜</div>
+              <div class="stat-value" id="statAhliWarisTotal">0</div>
+              <div class="stat-label">Total Surat Ahli Waris</div>
+            </div>
+          </div>
+
+          <!-- Ahli Waris Form Card -->
+          <div class="form-card" id="ahliWarisFormCard" style="margin-bottom:28px;">
+            <div class="form-card-title" id="ahliWarisFormTitle">📝 Input Surat Ahli Waris</div>
+            <form id="ahliWarisForm">
+              <input type="hidden" id="ahliWarisEditId" value="">
+              
+              <div class="form-grid">
+                <div class="form-group" style="grid-column: span 2;">
+                  <label for="ahliWarisNomor">
+                    Nomor Surat 
+                    <span class="nomor-auto-badge">✨ Auto</span>
+                  </label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">🔢</span>
+                    <input type="text" id="ahliWarisNomor" class="form-input" placeholder="Memuat nomor otomatis..." required readonly style="opacity:0.8; cursor:not-allowed;">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="ahliWarisTanggalSurat">Tanggal Surat</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">📅</span>
+                    <input type="text" id="ahliWarisTanggalSurat" class="form-input" placeholder="dd/mm/yyyy" required>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="ahliWarisNamaPewaris">Nama Pewaris (Almarhum/Almarhumah)</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">👤</span>
+                    <input type="text" id="ahliWarisNamaPewaris" class="form-input" placeholder="Nama Lengkap Pewaris" required>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="ahliWarisTempatLahirPewaris">Tempat Lahir Pewaris</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">📍</span>
+                    <input type="text" id="ahliWarisTempatLahirPewaris" class="form-input" placeholder="Tempat Lahir" required>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="ahliWarisTglLahirPewaris">Tanggal Lahir Pewaris</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">📅</span>
+                    <input type="text" id="ahliWarisTglLahirPewaris" class="form-input" placeholder="dd/mm/yyyy" required>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="ahliWarisTglMeninggal">Tanggal Meninggal</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">📅</span>
+                    <input type="text" id="ahliWarisTglMeninggal" class="form-input" placeholder="dd/mm/yyyy" required>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="ahliWarisAlamatPewaris">Alamat Pewaris</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">🏠</span>
+                    <input type="text" id="ahliWarisAlamatPewaris" class="form-input" placeholder="Alamat Lengkap Pewaris" required>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="ahliWarisNamaAhliWaris">Nama Ahli Waris</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">👥</span>
+                    <input type="text" id="ahliWarisNamaAhliWaris" class="form-input" placeholder="Nama Lengkap Ahli Waris" required>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="ahliWarisHubungan">Hubungan dengan Pewaris</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">🔗</span>
+                    <select id="ahliWarisHubungan" class="form-input" required style="padding-left:48px;">
+                      <option value="" disabled selected>Pilih Hubungan...</option>
+                      <option value="Anak Kandung">Anak Kandung</option>
+                      <option value="Istri">Istri</option>
+                      <option value="Suami">Suami</option>
+                      <option value="Orang Tua">Orang Tua</option>
+                      <option value="Saudara Kandung">Saudara Kandung</option>
+                      <option value="Cucu">Cucu</option>
+                      <option value="Lainnya">Lainnya</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="ahliWarisNIK">NIK Ahli Waris</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">🆔</span>
+                    <input type="text" id="ahliWarisNIK" class="form-input" placeholder="Nomor Induk Kependudukan" required maxlength="16">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="ahliWarisAlamatAhliWaris">Alamat Ahli Waris</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">🏠</span>
+                    <input type="text" id="ahliWarisAlamatAhliWaris" class="form-input" placeholder="Alamat Lengkap Ahli Waris" required>
+                  </div>
+                </div>
+
+                <div class="form-group" style="grid-column: span 2;">
+                  <label for="ahliWarisKeterangan">Keterangan Tambahan (Opsional)</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">📝</span>
+                    <input type="text" id="ahliWarisKeterangan" class="form-input" placeholder="Keterangan tambahan jika ada">
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-actions" style="margin-top:24px;">
+                <button type="submit" class="btn-save" id="btnSaveAhliWaris">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;vertical-align:middle;">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                  </svg>
+                  <span id="btnSaveAhliWarisText">Simpan Data</span>
+                </button>
+                <button type="button" class="btn-cancel" id="btnCancelAhliWaris">Batal</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Ahli Waris Table Card -->
+          <div class="table-section">
+            <h2>📊 Daftar Surat Ahli Waris</h2>
+            <div style="overflow-x:auto;">
+              <table class="data-table" id="ahliWarisTable">
+                <thead>
+                  <tr>
+                    <th>No</th>
+                    <th>Nomor Surat</th>
+                    <th>Nama Pewaris</th>
+                    <th>Nama Ahli Waris</th>
+                    <th>Hubungan</th>
+                    <th>Tanggal</th>
+                    <th style="width:120px;">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="ahliWarisTableBody">
+                  <!-- JS Injected -->
+                </tbody>
+              </table>
+            </div>
+            <div class="empty-state" id="ahliWarisEmptyState" style="display:none; padding:60px 40px;">
+              <div class="empty-icon">📜</div>
+              <h3>Belum Ada Data Surat Ahli Waris</h3>
               <p>Data yang tersimpan akan muncul di daftar ini.</p>
             </div>
           </div>
@@ -695,6 +897,7 @@
   <script src="js/dashboard.js"></script>
   <script src="js/sppd.js"></script>
   <script src="js/narasumber.js"></script>
+  <script src="js/surat-ahli-waris.js"></script>
   <script src="js/settings.js"></script>
 </body>
 </html>
