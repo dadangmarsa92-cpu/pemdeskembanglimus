@@ -805,6 +805,18 @@ body {
   border-bottom: 1px solid #f1f5f9;
 }
 
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px 24px;
+}
+
+@media (max-width: 768px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
