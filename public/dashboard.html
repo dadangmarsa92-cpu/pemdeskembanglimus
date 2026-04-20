@@ -210,135 +210,137 @@
             <h2 class="form-card-title" id="formSppdTitle">✏️ Input Data SPPD</h2>
             <input type="hidden" id="sppdEditId" value="">
             <form id="sppdForm" autocomplete="off">
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="sppdDasar">Dasar Surat / Instansi Pengirim</label>
-                  <div class="input-wrapper">
-                    <input type="text" id="sppdDasar" class="form-input" placeholder="Contoh: Surat Undangan Camat Borobudur" required style="padding-left:16px;">
+              <fieldset id="sppdFormFieldset" style="border:none; padding:0; margin:0;">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="sppdDasar">Dasar Surat / Instansi Pengirim</label>
+                    <div class="input-wrapper">
+                      <input type="text" id="sppdDasar" class="form-input" placeholder="Contoh: Surat Undangan Camat Borobudur" required style="padding-left:16px;">
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="sppdNomorDasar">Nomor Surat Dasar</label>
+                    <div class="input-wrapper">
+                      <input type="text" id="sppdNomorDasar" class="form-input" placeholder="Contoh: 800/123/2026" required style="padding-left:16px;">
+                    </div>
                   </div>
                 </div>
-                <div class="form-group">
-                  <label for="sppdNomorDasar">Nomor Surat Dasar</label>
-                  <div class="input-wrapper">
-                    <input type="text" id="sppdNomorDasar" class="form-input" placeholder="Contoh: 800/123/2026" required style="padding-left:16px;">
-                  </div>
-                </div>
-              </div>
 
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="sppdNomor">
-                    Nomor Surat SPPD
-                    <span class="nomor-auto-badge">🔄 Otomatis</span>
-                  </label>
-                  <div class="input-wrapper">
-                    <input type="text" id="sppdNomor" class="form-input" placeholder="Memuat..." required style="padding-left:16px; font-weight:600; letter-spacing:0.5px;">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="sppdNomor">
+                      Nomor Surat SPPD
+                      <span class="nomor-auto-badge">🔄 Otomatis</span>
+                    </label>
+                    <div class="input-wrapper">
+                      <input type="text" id="sppdNomor" class="form-input" placeholder="Memuat..." required style="padding-left:16px; font-weight:600; letter-spacing:0.5px;">
+                    </div>
+                    <small class="field-note">Nomor surat digenerate otomatis. Anda dapat mengubahnya secara manual jika diperlukan.</small>
                   </div>
-                  <small class="field-note">Nomor surat digenerate otomatis. Anda dapat mengubahnya secara manual jika diperlukan.</small>
-                </div>
-                <div class="form-group">
-                  <label for="sppdNama">Nama Pegawai Yang Diperintah</label>
-                  <div class="input-wrapper">
-                    <input type="text" id="sppdNama" class="form-input" placeholder="Masukkan nama pegawai" required style="padding-left:16px;">
+                  <div class="form-group">
+                    <label for="sppdNama">Nama Pegawai Yang Diperintah</label>
+                    <div class="input-wrapper">
+                      <input type="text" id="sppdNama" class="form-input" placeholder="Masukkan nama pegawai" required style="padding-left:16px;">
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="sppdJabatan">Jabatan</label>
-                  <div class="input-wrapper">
-                    <input type="text" id="sppdJabatan" class="form-input" placeholder="Contoh: Sekretaris Desa" required style="padding-left:16px;">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="sppdJabatan">Jabatan</label>
+                    <div class="input-wrapper">
+                      <input type="text" id="sppdJabatan" class="form-input" placeholder="Contoh: Sekretaris Desa" required style="padding-left:16px;">
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="sppdNominal">Nominal (Rp)</label>
+                    <div class="input-wrapper">
+                      <input type="text" id="sppdNominal" class="form-input" placeholder="Contoh: 500.000" required style="padding-left:16px;">
+                    </div>
                   </div>
                 </div>
-                <div class="form-group">
-                  <label for="sppdNominal">Nominal (Rp)</label>
-                  <div class="input-wrapper">
-                    <input type="text" id="sppdNominal" class="form-input" placeholder="Contoh: 500.000" required style="padding-left:16px;">
-                  </div>
-                </div>
-              </div>
 
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="sppdAcara">Maksud Perjalanan Dinas</label>
-                  <div class="input-wrapper">
-                    <input type="text" id="sppdAcara" class="form-input" placeholder="Contoh: Menghadiri Rapat Koordinasi" required style="padding-left:16px;">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="sppdAcara">Maksud Perjalanan Dinas</label>
+                    <div class="input-wrapper">
+                      <input type="text" id="sppdAcara" class="form-input" placeholder="Contoh: Menghadiri Rapat Koordinasi" required style="padding-left:16px;">
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="sppdKendaraan">Kendaraan yang Dipergunakan</label>
+                    <div class="input-wrapper">
+                      <select id="sppdKendaraan" class="form-input" required style="padding-left:16px;">
+                        <option value="" disabled selected>Pilih Kendaraan...</option>
+                        <option value="Sepeda Motor">Sepeda Motor</option>
+                        <option value="Mobil">Mobil</option>
+                        <option value="Bis">Bis</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
-                <div class="form-group">
-                  <label for="sppdKendaraan">Kendaraan yang Dipergunakan</label>
-                  <div class="input-wrapper">
-                    <select id="sppdKendaraan" class="form-input" required style="padding-left:16px;">
-                      <option value="" disabled selected>Pilih Kendaraan...</option>
-                      <option value="Sepeda Motor">Sepeda Motor</option>
-                      <option value="Mobil">Mobil</option>
-                      <option value="Bis">Bis</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
 
-              <div class="form-row">
-                <div class="form-group" style="flex:2;">
-                  <label for="sppdTujuan">Tempat Tujuan</label>
-                  <div class="input-wrapper">
-                    <input type="text" id="sppdTujuan" class="form-input" placeholder="Contoh: Kantor Kecamatan Borobudur" required style="padding-left:16px;">
+                <div class="form-row">
+                  <div class="form-group" style="flex:2;">
+                    <label for="sppdTujuan">Tempat Tujuan</label>
+                    <div class="input-wrapper">
+                      <input type="text" id="sppdTujuan" class="form-input" placeholder="Contoh: Kantor Kecamatan Borobudur" required style="padding-left:16px;">
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div class="form-row form-row-3">
-                <div class="form-group">
-                  <label for="sppdLama">Lama Perjalanan Dinas</label>
-                  <div class="input-wrapper lama-input-wrapper">
-                    <input type="number" id="sppdLama" class="form-input" placeholder="Contoh: 1" min="1" max="365" required style="padding-left:16px;">
-                    <span class="lama-suffix">hari</span>
+                <div class="form-row form-row-3">
+                  <div class="form-group">
+                    <label for="sppdLama">Lama Perjalanan Dinas</label>
+                    <div class="input-wrapper lama-input-wrapper">
+                      <input type="number" id="sppdLama" class="form-input" placeholder="Contoh: 1" min="1" max="365" required style="padding-left:16px;">
+                      <span class="lama-suffix">hari</span>
+                    </div>
+                    <small class="field-note">Masukkan angka hari (contoh: 1 → disimpan sebagai "1 (satu) hari")</small>
                   </div>
-                  <small class="field-note">Masukkan angka hari (contoh: 1 → disimpan sebagai "1 (satu) hari")</small>
-                </div>
-                <div class="form-group">
-                  <label for="sppdTglBerangkat">Tanggal Berangkat</label>
-                  <div class="input-wrapper">
-                    <input type="text" id="sppdTglBerangkat" class="form-input" placeholder="dd/mm/yyyy" required style="padding-left:16px;">
+                  <div class="form-group">
+                    <label for="sppdTglBerangkat">Tanggal Berangkat</label>
+                    <div class="input-wrapper">
+                      <input type="text" id="sppdTglBerangkat" class="form-input" placeholder="dd/mm/yyyy" required style="padding-left:16px;">
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="sppdTglKembali">
+                      Tanggal Kembali
+                      <span class="nomor-auto-badge">🔄 Otomatis</span>
+                    </label>
+                    <div class="input-wrapper">
+                      <input type="text" id="sppdTglKembali" class="form-input" placeholder="dd/mm/yyyy" required style="padding-left:16px; opacity:0.8; cursor:not-allowed;" readonly>
+                    </div>
+                    <small class="field-note">Dihitung otomatis dari Tgl Berangkat + Lama Perjalanan</small>
+                  </div>
+                  <div class="form-group">
+                    <label for="sppdFile">Unggah Foto / Berkas PDF Surat (Opsional)</label>
+                    <div class="input-wrapper">
+                      <input type="file" id="sppdFile" class="form-input" accept="image/*,application/pdf" style="padding-top:8px;">
+                    </div>
+                    <small class="field-note">Format: JPG, PNG, PDF. Maksimal 5MB.</small>
                   </div>
                 </div>
-                <div class="form-group">
-                  <label for="sppdTglKembali">
-                    Tanggal Kembali
-                    <span class="nomor-auto-badge">🔄 Otomatis</span>
-                  </label>
-                  <div class="input-wrapper">
-                    <input type="text" id="sppdTglKembali" class="form-input" placeholder="dd/mm/yyyy" required style="padding-left:16px; opacity:0.8; cursor:not-allowed;" readonly>
-                  </div>
-                  <small class="field-note">Dihitung otomatis dari Tgl Berangkat + Lama Perjalanan</small>
-                </div>
-                <div class="form-group">
-                  <label for="sppdFile">Unggah Foto / Berkas PDF Surat (Opsional)</label>
-                  <div class="input-wrapper">
-                    <input type="file" id="sppdFile" class="form-input" accept="image/*,application/pdf" style="padding-top:8px;">
-                  </div>
-                  <small class="field-note">Format: JPG, PNG, PDF. Maksimal 5MB.</small>
-                </div>
-              </div>
 
-              <div class="form-actions">
-                <button type="submit" class="btn-save" id="btnSaveSppd">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;vertical-align:middle;">
-                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                    <polyline points="7 3 7 8 15 8"></polyline>
-                  </svg>
-                  <span id="btnSaveSppdText">Simpan</span>
-                </button>
-                <button type="button" class="btn-cancel" id="btnCancelSppd">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;vertical-align:middle;">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                  </svg>
-                  <span id="btnCancelSppdText">Batal / Reset</span>
-                </button>
-              </div>
+                <div class="form-actions">
+                  <button type="submit" class="btn-save" id="btnSaveSppd">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;vertical-align:middle;">
+                      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                      <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                      <polyline points="7 3 7 8 15 8"></polyline>
+                    </svg>
+                    <span id="btnSaveSppdText">Simpan</span>
+                  </button>
+                  <button type="button" class="btn-cancel" id="btnCancelSppd">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;vertical-align:middle;">
+                      <line x1="18" y1="6" x2="6" y2="18"></line>
+                      <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                    <span id="btnCancelSppdText">Batal / Reset</span>
+                  </button>
+                </div>
+              </fieldset>
             </form>
           </div>
 
@@ -398,6 +400,43 @@
             <div class="modal-actions">
               <button class="btn-cancel" id="btnDeleteNo">Batal</button>
               <button class="btn-save" id="btnDeleteYes" style="background:var(--danger); border-color:var(--danger);">Ya, Hapus Data</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ JUMLAH SPPD PROMPT MODAL ═══ -->
+        <div class="modal-overlay" id="sppdPromptModal">
+          <div class="modal-card">
+            <div class="modal-icon" style="background: rgba(33, 150, 243, 0.1); color: var(--primary);">📋</div>
+            <h3>Jumlah SPPD</h3>
+            <p style="margin-bottom: 20px;">Masukkan jumlah SPPD yang akan dibuat.</p>
+            <div class="form-group" style="text-align: left; margin-bottom: 24px;">
+              <input type="number" id="sppdPromptCount" class="form-input" placeholder="Masukkan jumlah (contoh: 1)" min="1" required style="width: 100%; border-radius: var(--radius-sm); border: 1px solid var(--border-color); padding: 12px 16px;" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+            </div>
+            <div class="modal-actions" style="margin-top: 0;">
+              <button class="btn-cancel" id="btnSppdPromptBatal">Batal</button>
+              <button class="btn-save" id="btnSppdPromptLanjut">Lanjutkan</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ SPPD FOLLOWER MODAL ═══ -->
+        <div class="modal-overlay" id="sppdFollowerModal">
+          <div class="modal-card" style="max-width: 500px;">
+            <div class="modal-icon" style="background: rgba(76, 175, 80, 0.1); color: var(--success);">👥</div>
+            <h3 id="sppdFollowerTitle">Peserta Kedua</h3>
+            <p style="margin-bottom: 20px;">Masukkan Nama dan Jabatan untuk SPPD peserta berturut-turut.</p>
+            <div class="form-group" style="text-align: left; margin-bottom: 16px;">
+              <label for="sppdFollowerNama">Nama Peserta</label>
+              <input type="text" id="sppdFollowerNama" class="form-input" placeholder="Masukkan nama peserta" required style="width: 100%; padding-left: 16px;">
+            </div>
+            <div class="form-group" style="text-align: left; margin-bottom: 24px;">
+              <label for="sppdFollowerJabatan">Jabatan</label>
+              <input type="text" id="sppdFollowerJabatan" class="form-input" placeholder="Contoh: Staf" required style="width: 100%; padding-left: 16px;">
+            </div>
+            <div class="modal-actions" style="margin-top: 0;">
+              <button class="btn-cancel" id="btnSppdFollowerBatal">Batal</button>
+              <button class="btn-save" id="btnSppdFollowerSimpan">Simpan</button>
             </div>
           </div>
         </div>

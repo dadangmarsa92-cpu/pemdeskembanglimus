@@ -4,11 +4,16 @@ let editingId = null;
 let idToDelete = null;
 let currentFileBase64 = null; // Store Base64 for upload
 
+let sppdParentData = null;
+let sppdFollowersRemaining = 0;
+let sppdFollowerCurrentIndex = 1;
+
 document.addEventListener('DOMContentLoaded', () => {
   initSppdForm();
   loadSppdData();
   loadStats();
   initFormInteractivity();
+  initFollowerFlow();
 });
 
 // ── Form Interactivity (Datepicker & Nominal Format) ──
@@ -41,7 +46,8 @@ function initFormInteractivity() {
 
   // Title Case for Text Inputs
   const titleCaseInputs = [
-    'sppdNama', 'sppdJabatan', 'sppdAcara', 'sppdTujuan', 'sppdDasar'
+    'sppdNama', 'sppdJabatan', 'sppdAcara', 'sppdTujuan', 'sppdDasar',
+    'sppdFollowerNama', 'sppdFollowerJabatan'
   ];
   titleCaseInputs.forEach(id => {
     const input = document.getElementById(id);
@@ -309,11 +315,24 @@ async function saveSppd() {
 
     if (result.success) {
       lastSavedId = result.id;
-      resetFormToCreateMode();
-      await loadNextNomorSurat();
-      loadSppdData();
-      loadStats();
-      openPrintModal();
+      
+      // Cek apakah ada antrean pengikut (multi-SPPD)
+      if (window.jumlahSppdTarget && window.jumlahSppdTarget > 1) {
+        sppdParentData = { ...data };
+        sppdFollowersRemaining = window.jumlahSppdTarget - 1;
+        sppdFollowerCurrentIndex = 2; // Mulai dari peserta ke-2
+        window.jumlahSppdTarget = 0; // Konsumsi target agar tidak berulang
+        
+        loadSppdData();
+        loadStats();
+        openFollowerModal();
+      } else {
+        resetFormToCreateMode();
+        await loadNextNomorSurat();
+        loadSppdData();
+        loadStats();
+        openPrintModal();
+      }
     } else {
       showToast(result.message, 'error');
     }
@@ -326,6 +345,108 @@ async function saveSppd() {
       btn.disabled = false;
       document.getElementById('btnSaveSppdText').textContent = isEditMode ? 'Update Data' : 'Simpan';
     }
+  }
+}
+
+// ── Multi-SPPD Follower Form Logic ──
+function initFollowerFlow() {
+  const btnBatal = document.getElementById('btnSppdFollowerBatal');
+  const btnSimpan = document.getElementById('btnSppdFollowerSimpan');
+
+  if (btnBatal) {
+    btnBatal.addEventListener('click', () => {
+      closeFollowerModal();
+      resetFormToCreateMode(); // reset base form just in case
+      showToast('Penambahan peserta lainnya dibatalkan.', 'success');
+    });
+  }
+
+  if (btnSimpan) {
+    btnSimpan.addEventListener('click', saveFollowerSppd);
+  }
+}
+
+function openFollowerModal() {
+  document.getElementById('sppdFollowerNama').value = '';
+  document.getElementById('sppdFollowerJabatan').value = '';
+  
+  const titles = ['', '', 'Kedua', 'Ketiga', 'Keempat', 'Kelima', 'Keenam', 'Ketujuh', 'Kedelapan', 'Kesembilan', 'Kesepuluh'];
+  let titleText = titles[sppdFollowerCurrentIndex] || `Ke-${sppdFollowerCurrentIndex}`;
+  
+  document.getElementById('sppdFollowerTitle').textContent = `Peserta ${titleText}`;
+  document.getElementById('sppdFollowerModal').classList.add('active');
+  setTimeout(() => document.getElementById('sppdFollowerNama').focus(), 100);
+}
+
+function closeFollowerModal() {
+  document.getElementById('sppdFollowerModal').classList.remove('active');
+  sppdFollowersRemaining = 0;
+  sppdParentData = null;
+}
+
+async function saveFollowerSppd() {
+  const nama = document.getElementById('sppdFollowerNama').value.trim();
+  const jabatan = document.getElementById('sppdFollowerJabatan').value.trim();
+
+  if (!nama || !jabatan) {
+    showToast('Nama dan Jabatan wajib diisi.', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('btnSppdFollowerSimpan');
+  btn.disabled = true;
+  btn.textContent = 'Menyimpan...';
+
+  try {
+    // Get newest number for the clone
+    let newNomor = '';
+    const numRes = await fetch('/api/sppd/next-number');
+    if (numRes.ok) {
+      const numResult = await numRes.json();
+      if (numResult.success) newNomor = numResult.nomor;
+    }
+
+    const payload = {
+      ...sppdParentData,
+      nama_pegawai: nama,
+      jabatan: jabatan,
+      nomor_surat: newNomor || sppdParentData.nomor_surat // fallback (though might clash)
+    };
+
+    const res = await fetch('/api/sppd', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const result = await res.json();
+
+    if (result.success) {
+      lastSavedId = result.id;
+      loadSppdData();
+      loadStats();
+      
+      sppdFollowersRemaining--;
+      if (sppdFollowersRemaining > 0) {
+        sppdFollowerCurrentIndex++;
+        
+        btn.disabled = false;
+        btn.textContent = 'Simpan';
+        
+        openFollowerModal(); // Reset form and title for next
+      } else {
+        closeFollowerModal();
+        resetFormToCreateMode();
+        openPrintModal(); // Ask if want to print the last one (or maybe not? just standard flow)
+      }
+    } else {
+      showToast(result.message, 'error');
+      btn.disabled = false;
+      btn.textContent = 'Simpan';
+    }
+  } catch (err) {
+    showToast('Gagal menyimpan peserta.', 'error');
+    btn.disabled = false;
+    btn.textContent = 'Simpan';
   }
 }
 
@@ -407,6 +528,9 @@ async function editSppd(id) {
     editingId = id;
     document.getElementById('sppdEditId').value = id;
     currentFileBase64 = d.file_base64 || null;
+
+    const fieldset = document.getElementById('sppdFormFieldset');
+    if (fieldset) fieldset.disabled = false;
 
     // Isi form
     document.getElementById('sppdNomor').value = d.nomor_surat;

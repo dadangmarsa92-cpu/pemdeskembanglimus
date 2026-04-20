@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
   checkSession();
   initSidebar();
   initNavigation();
+  initSppdPrompt();
 
   // Logout button
   document.getElementById('btnLogout').addEventListener('click', handleLogout);
@@ -74,7 +75,11 @@ function initNavigation() {
     link.addEventListener('click', (e) => {
       e.preventDefault();
       const page = link.dataset.page;
-      navigateTo(page);
+      if (page === 'sppd') {
+        openSppdPrompt();
+      } else {
+        navigateTo(page);
+      }
     });
   });
 
@@ -82,9 +87,76 @@ function initNavigation() {
   document.querySelectorAll('.stat-card.clickable').forEach(card => {
     card.addEventListener('click', () => {
       const target = card.dataset.target;
-      if (target) navigateTo(target);
+      if (target === 'sppd') {
+        openSppdPrompt();
+      } else if (target) {
+        navigateTo(target);
+      }
     });
   });
+}
+
+function openSppdPrompt() {
+  const modal = document.getElementById('sppdPromptModal');
+  const input = document.getElementById('sppdPromptCount');
+  if (modal && input) {
+    input.value = '';
+    modal.classList.add('active');
+    setTimeout(() => input.focus(), 100);
+  } else {
+    navigateTo('sppd'); // fallback
+  }
+}
+
+function closeSppdPrompt() {
+  const modal = document.getElementById('sppdPromptModal');
+  if (modal) modal.classList.remove('active');
+}
+
+function initSppdPrompt() {
+  const btnLanjut = document.getElementById('btnSppdPromptLanjut');
+  const btnBatal = document.getElementById('btnSppdPromptBatal');
+  const inputPrompt = document.getElementById('sppdPromptCount');
+  const modal = document.getElementById('sppdPromptModal');
+
+  const handleBatal = () => {
+    closeSppdPrompt();
+    navigateTo('sppd');
+    const fieldset = document.getElementById('sppdFormFieldset');
+    if (fieldset) fieldset.disabled = true;
+  };
+
+  if (btnBatal) btnBatal.addEventListener('click', handleBatal);
+  if (modal) {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) handleBatal();
+    });
+  }
+
+  if (btnLanjut) {
+    btnLanjut.addEventListener('click', () => {
+      if (!inputPrompt.value || parseInt(inputPrompt.value) < 1) {
+        showToast('Jumlah SPPD harus diisi (minimal 1)', 'error');
+        inputPrompt.focus();
+        return;
+      }
+      closeSppdPrompt();
+      window.jumlahSppdTarget = parseInt(inputPrompt.value);
+      navigateTo('sppd');
+      const fieldset = document.getElementById('sppdFormFieldset');
+      if (fieldset) fieldset.disabled = false;
+    });
+  }
+  
+  if (inputPrompt) {
+    // Allow pressing enter to submit
+    inputPrompt.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        btnLanjut.click();
+      }
+    });
+  }
 }
 
 // ── Navigate to Page ──
