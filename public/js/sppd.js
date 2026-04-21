@@ -587,6 +587,9 @@ async function loadSppdData() {
         const tglBerangkat = formatDateID(item.tanggal_berangkat);
 
         tr.innerHTML = `
+          <td style="text-align:center;">
+            <input type="checkbox" class="sppd-checkbox" value="${item.id}" style="width: 16px; height: 16px; cursor: pointer;">
+          </td>
           <td>${index + 1}</td>
           <td><strong>${item.nomor_surat}</strong></td>
           <td>${item.nama_pegawai}</td>
@@ -612,6 +615,9 @@ async function loadSppdData() {
         `;
         tbody.appendChild(tr);
       });
+      
+      // Setup checkbox listeners
+      setupCheckboxListeners();
     } else {
       table.style.display = 'none';
       emptyState.style.display = 'block';
@@ -619,6 +625,47 @@ async function loadSppdData() {
   } catch (error) {
     console.error('Failed to load SPPD data:', error);
   }
+}
+
+// ── Checkbox Logic for SPPD Penerimaan ──
+function setupCheckboxListeners() {
+  const selectAllCb = document.getElementById('selectAllSppd');
+  const itemCbs = document.querySelectorAll('.sppd-checkbox');
+  const btnCetak = document.getElementById('btnCetakPenerimaan');
+
+  function updateButtonVisibility() {
+    const checkedCount = document.querySelectorAll('.sppd-checkbox:checked').length;
+    btnCetak.style.display = checkedCount > 0 ? 'flex' : 'none';
+  }
+
+  // Header checkbox (Select All)
+  if (selectAllCb) {
+    selectAllCb.checked = false; // Reset state
+    selectAllCb.addEventListener('change', (e) => {
+      const isChecked = e.target.checked;
+      itemCbs.forEach(cb => { cb.checked = isChecked; });
+      updateButtonVisibility();
+    });
+  }
+
+  // Individual checkboxes
+  itemCbs.forEach(cb => {
+    cb.addEventListener('change', () => {
+      const allChecked = document.querySelectorAll('.sppd-checkbox:checked').length === itemCbs.length;
+      if (selectAllCb) selectAllCb.checked = allChecked && itemCbs.length > 0;
+      updateButtonVisibility();
+    });
+  });
+
+  // Print button click
+  btnCetak.onclick = () => {
+    const checkedBoxes = document.querySelectorAll('.sppd-checkbox:checked');
+    const ids = Array.from(checkedBoxes).map(cb => cb.value);
+    if (ids.length > 0) {
+      const url = `/api/sppd/generate-penerimaan-docx?ids=${ids.join(',')}`;
+      window.open(url, '_blank');
+    }
+  };
 }
 
 // ── Load Stats ──

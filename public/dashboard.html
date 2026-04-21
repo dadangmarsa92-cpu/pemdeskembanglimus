@@ -346,11 +346,24 @@
 
           <!-- SPPD Data Table -->
           <div class="table-section" id="sppdTableSection" style="margin-top:28px;">
-            <h2>📊 Data SPPD Tersimpan</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+              <h2>📊 Data SPPD Tersimpan</h2>
+              <button class="btn-save" id="btnCetakPenerimaan" style="background: #4CAF50; display: none; align-items: center; gap: 8px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                  <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                  <rect x="6" y="14" width="12" height="8"></rect>
+                </svg>
+                Cetak Penerimaan Terpilih
+              </button>
+            </div>
             <div style="overflow-x:auto;">
               <table class="data-table" id="sppdTable">
                 <thead>
                   <tr>
+                    <th style="width:40px; text-align:center;">
+                      <input type="checkbox" id="selectAllSppd" title="Pilih Semua" style="width: 16px; height: 16px; cursor: pointer;">
+                    </th>
                     <th>No</th>
                     <th>Nomor Surat</th>
                     <th>Nama Pegawai</th>

@@ -546,6 +546,115 @@ app.delete('/api/narasumber/:id', (req, res) => {
   }
 });
 
+// Generate Word (DOCX) SPPD Penerimaan Multiple
+app.get('/api/sppd/generate-penerimaan-docx', (req, res) => {
+  const idsParam = req.query.ids;
+  if (!idsParam) return res.status(400).send('Parameter ids tidak ditemukan.');
+  
+  const ids = idsParam.split(',').map(id => parseInt(id)).filter(id => !isNaN(id));
+  if (ids.length === 0) return res.status(400).send('ID SPPD tidak valid.');
+
+  console.log(`[GET /api/sppd/generate-penerimaan-docx] 📥 Requesting DOCX for IDs: ${ids.join(', ')}`);
+
+  if (!req.session.userId) {
+    return res.status(401).send('Belum login.');
+  }
+
+  const templatePath = path.join(__dirname, 'templates', 'sppdpenerimaan_template.docx');
+  if (!fs.existsSync(templatePath)) {
+    return res.status(404).send('Template Word sppdpenerimaan_template.docx tidak ditemukan.');
+  }
+
+  try {
+    const placeholders = ids.map(() => '?').join(',');
+    const stmt = db.prepare(`SELECT * FROM sppd WHERE id IN (${placeholders})`);
+    stmt.bind(ids);
+    
+    const items = [];
+    while (stmt.step()) {
+      items.push(stmt.getAsObject());
+    }
+    stmt.free();
+
+    if (items.length === 0) return res.status(404).send('Data SPPD tidak ditemukan.');
+
+    const settings = getSettings();
+    const firstItem = items[0]; // Used for common headers if needed
+    
+    let totalNominalNum = 0;
+
+    const peserta = items.map((item, index) => {
+      const nominalNum = Number(item.nominal_rupiah) || 0;
+      totalNominalNum += nominalNum;
+      return {
+        no: index + 1,
+        nama_pegawai: item.nama_pegawai,
+        gol: item.jabatan || '-',
+        tujuan: item.tujuan,
+        lama_perjalanan: String(item.lama_perjalanan).replace(/\D+/g, ''), // Get only the number
+        tgl_berangkat: formatDateID(item.tanggal_berangkat),
+        tgl_kembali: formatDateID(item.tanggal_kembali),
+        nominal: item.nominal_rupiah ? `Rp. ${new Intl.NumberFormat('id-ID').format(nominalNum)}` : 'Rp. 0'
+      };
+    });
+
+    const templateData = {
+      // Global/Header fields
+      nomor_surat: firstItem.nomor_surat,
+      nama_desa: settings.nama_desa || 'Kembanglimus',
+      nama_kecamatan: settings.nama_kecamatan || 'Borobudur',
+      nama_kabupaten: settings.nama_kabupaten || 'Magelang',
+      kepala_desa: settings.kepala_desa || 'SOETJI ARIMBI',
+      total_nominal: `Rp. ${new Intl.NumberFormat('id-ID').format(totalNominalNum)}`,
+      jumlah_nominal: `Rp. ${new Intl.NumberFormat('id-ID').format(totalNominalNum)}`,
+      
+      // The array for loop: {#nama_pegawai} ... {/nama_pegawai}
+      // Template uses nama_pegawai as the loop variable name
+      nama_pegawai: peserta
+    };
+
+    const content = fs.readFileSync(templatePath); 
+    const zip = new PizZip(content);
+    const doc = new Docxtemplater(zip, {
+      paragraphLoop: true,
+      linebreaks: true,
+    });
+
+    doc.render(templateData);
+
+    const buf = doc.getZip().generate({
+      type: 'nodebuffer',
+      compression: 'DEFLATE',
+    });
+
+    const safeFilename = `SPPD_Penerimaan_${Date.now()}.docx`;
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}"`);
+    res.setHeader('Content-Length', buf.length);
+    res.send(buf);
+
+  } catch (err) {
+    console.error('❌ DOCX Generation Error Details:', err);
+    
+    let errorMsg = 'Ada kesalahan sistem saat memproses dokumen.';
+    if (err.properties && err.properties.errors instanceof Array) {
+      errorMsg = err.properties.errors.map(e => e.properties.explanation).join('\n');
+    } else if (err.message) {
+      errorMsg = err.message;
+    }
+    
+    res.status(500).send(`
+      <div style="font-family:sans-serif; padding:40px; text-align:center; color:#333;">
+        <h2 style="color:#e53935;">Terjadi Kesalahan pada Template Word Anda</h2>
+        <p>Sistem tidak dapat memproses file <b>sppdpenerimaan_template.docx</b> karena penulisan tag (kurung kurawal) yang tidak valid.</p>
+        <div style="background:#ffebee; border:1px solid #ffcdd2; color:#b71c1c; padding:20px; border-radius:8px; display:inline-block; text-align:left; max-width:800px; margin-top:20px; font-family:monospace; white-space:pre-wrap;">${errorMsg}</div>
+        <p style="margin-top:30px;"><b>Solusi:</b> Silakan buka file <code>sppdpenerimaan_template.docx</code> di Microsoft Word, dan perbaiki penulisan tag sesuai petunjuk, lalu simpan kembali.</p>
+        <button onclick="window.close()" style="margin-top:20px; padding:10px 20px; background:#2196F3; color:white; border:none; border-radius:4px; cursor:pointer;">Tutup Halaman Ini</button>
+      </div>
+    `);
+  }
+});
+
 // Get single SPPD by ID
 app.get('/api/sppd/:id', (req, res) => {
   if (!req.session.userId) {
