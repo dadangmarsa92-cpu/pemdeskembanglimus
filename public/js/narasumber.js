@@ -38,6 +38,21 @@ function initNarasumberPage() {
     // Initial load
     loadNarasumberData();
     loadNextNaraNumber();
+
+    // ── Input Validations: Title Case (Capital at start of each word) ──
+    const titleCaseFields = ['naraNama', 'naraBidang', 'naraKegiatan', 'naraTempat'];
+    titleCaseFields.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('blur', () => {
+                if (el.value) {
+                    el.value = el.value.toLowerCase().split(' ').map(word => {
+                        return word.charAt(0).toUpperCase() + word.slice(1);
+                    }).join(' ');
+                }
+            });
+        }
+    });
 }
 
 function resetNarasumberForm() {
@@ -213,7 +228,6 @@ async function executeNaraDeletion(id) {
 }
 
 function openNaraPrintModal(id) {
-    // We can reuse the existing printModal in dashboard.html by updating its content
     const modal = document.getElementById('printModal');
     const btnWord = document.getElementById('btnDownloadWord');
     const p = modal.querySelector('p');

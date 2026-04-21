@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const PizZip = require('pizzip');
 const Docxtemplater = require('docxtemplater');
+const XLSX = require('xlsx');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -173,6 +174,9 @@ function saveDatabase() {
   }
 }
 
+
+
+
 // ============================================================
 // MIDDLEWARE
 // ============================================================
@@ -192,6 +196,60 @@ app.use(session({
 // ============================================================
 // API ROUTES
 // ============================================================
+
+// ── RAB: Read Excel ──
+app.get('/api/rab', (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ success: false, message: 'Belum login.' });
+
+  try {
+    const bidangPath = path.join(__dirname, 'templates', 'daftar_bidang.xlsx');
+    const hierarchyPath = path.join(__dirname, 'templates', 'daftar_sub__sub_bidang.xlsx');
+
+    let bidangData = [];
+    if (fs.existsSync(bidangPath)) {
+      const wb = XLSX.readFile(bidangPath);
+      bidangData = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+    }
+
+    let hierarchy = {};
+    if (fs.existsSync(hierarchyPath)) {
+      const wb = XLSX.readFile(hierarchyPath);
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+      if (rows.length >= 2) {
+        const bidangHeaders = rows[0];
+        const subBidangHeaders = rows[1];
+
+        bidangHeaders.forEach((bidangName, colIndex) => {
+          if (!bidangName) return;
+
+          if (!hierarchy[bidangName]) hierarchy[bidangName] = {};
+
+          const subBidangName = subBidangHeaders[colIndex];
+          if (!subBidangName) return;
+
+          if (!hierarchy[bidangName][subBidangName]) {
+            hierarchy[bidangName][subBidangName] = [];
+          }
+
+          // Collect sub-sub bidang from row 2 onwards
+          for (let i = 2; i < rows.length; i++) {
+            const val = rows[i][colIndex];
+            if (val) {
+              hierarchy[bidangName][subBidangName].push(val);
+            }
+          }
+        });
+      }
+    }
+
+    res.json({ success: true, bidang: bidangData, hierarchy: hierarchy });
+  } catch (err) {
+    console.error('Error reading RAB Excel:', err);
+    res.status(500).json({ success: false, message: 'Gagal membaca file Excel RAB.' });
+  }
+});
 
 // Login
 app.post('/api/login', (req, res) => {
@@ -628,6 +686,7 @@ app.get('/api/sppd/generate-penerimaan-docx', (req, res) => {
     });
 
     const safeFilename = `SPPD_Penerimaan_${Date.now()}.docx`;
+
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
     res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}"`);
     res.setHeader('Content-Length', buf.length);
@@ -809,6 +868,7 @@ app.get('/api/sppd/generate-docx/:id', (req, res) => {
     });
 
     const safeFilename = `SPPD_${item.nama_pegawai.replace(/[^a-zA-Z0-9]/g, '_')}.docx`;
+
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
     res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}"`);
     res.setHeader('Content-Length', buf.length);
@@ -888,6 +948,7 @@ app.get('/api/narasumber/generate-docx/:id', (req, res) => {
     });
 
     const safeFilename = `Narasumber_${item.nama_narasumber.replace(/[^a-zA-Z0-9]/g, '_')}.docx`;
+
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
     res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}"`);
     res.setHeader('Content-Length', buf.length);

@@ -22,6 +22,7 @@ const pageTitles = {
   'surat-ahli-waris': 'Surat Ahli Waris',
   permohonan: 'Permohonan Narasumber',
   sk: 'SK Narasumber',
+  rab: 'Rencana Anggaran Biaya (RAB)',
   laporan: 'Laporan',
   pengaturan: 'Pengaturan'
 };
@@ -212,6 +213,10 @@ function navigateTo(page) {
   if (page === 'narasumber' && typeof loadNarasumberData === 'function') {
     loadNarasumberData();
     loadNextNaraNumber();
+  }
+
+  if (page === 'rab' && typeof initRab === 'function') {
+    initRab();
   }
 
   if (page === 'surat-ahli-waris' && typeof loadAhliWarisData === 'function') {
@@ -524,6 +529,8 @@ function reformatToISO(dmY) {
   if (yearNum < 100) yearNum += 2000;
   return `${yearNum}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 }
+
+
 
 
 

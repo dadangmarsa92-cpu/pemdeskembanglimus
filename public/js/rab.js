@@ -1,267 +1,155 @@
 /**
- * RAB (Rencana Anggaran Biaya) - Hierarchical Logic
+ * RAB (Rencana Anggaran Biaya) - Excel View Logic
  */
 
-document.addEventListener('DOMContentLoaded', () => {
-  initRabForm();
-  loadRabList();
-});
+let rabBidangData = [];
+let rabHierarchy = {};
 
-function initRabForm() {
-  const bidangSel = document.getElementById('rabBidang');
-  const subBidangSel = document.getElementById('rabSubBidang');
-  const subSubBidangSel = document.getElementById('rabSubSubBidang');
-  const kegiatanSel = document.getElementById('rabKegiatan');
-  const belanjaSel = document.getElementById('rabBelanja');
-  const form = document.getElementById('rabForm');
-
-  if (!bidangSel) return;
-
-  // 1. Initial Load: Bidang
-  loadBidang();
-
-  // 2. Change Handlers
-  bidangSel.addEventListener('change', () => {
-    resetDropdowns(['subBidang', 'subSubBidang', 'kegiatan', 'belanja']);
-    if (bidangSel.value) loadSubBidang(bidangSel.value);
-  });
-
-  subBidangSel.addEventListener('change', () => {
-    resetDropdowns(['subSubBidang', 'kegiatan', 'belanja']);
-    if (subBidangSel.value) loadSubSubBidang(subBidangSel.value);
-  });
-
-  subSubBidangSel.addEventListener('change', () => {
-    resetDropdowns(['kegiatan', 'belanja']);
-    if (subSubBidangSel.value) loadKegiatan(subSubBidangSel.value);
-  });
-
-  kegiatanSel.addEventListener('change', () => {
-    resetDropdowns(['belanja']);
-    if (kegiatanSel.value) loadBelanja(kegiatanSel.value);
-  });
-
-  // 3. Form Submit
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    await saveRab();
-  });
+function initRab() {
+    loadRabExcelData();
 }
 
-// ── Dropdown Loaders ──
+async function loadRabExcelData() {
+    const listContainer = document.getElementById('rabBidangList');
 
-async function loadBidang() {
-  const sel = document.getElementById('rabBidang');
-  try {
-    const res = await fetch('/api/rab/master/bidang');
-    const data = await res.json();
-    if (data.success) {
-      data.list.forEach(v => {
-        const opt = document.createElement('option');
-        opt.value = v;
-        opt.textContent = v;
-        sel.appendChild(opt);
-      });
+    try {
+        listContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-muted);">Memuat data Excel...</div>';
+        
+        const res = await fetch('/api/rab');
+        const result = await res.json();
+
+        if (result.success) {
+            rabBidangData = result.bidang;
+            rabHierarchy = result.hierarchy;
+            renderBidangList(rabBidangData);
+        } else {
+            listContainer.innerHTML = `<div style="padding: 20px; text-align: center; color: #ef4444;">${result.message}</div>`;
+        }
+    } catch (err) {
+        console.error('Failed to load RAB data:', err);
+        listContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #ef4444;">Gagal menghubungi server.</div>';
     }
-  } catch (err) { console.error(err); }
 }
 
-async function loadSubBidang(bidang) {
-  const sel = document.getElementById('rabSubBidang');
-  try {
-    const res = await fetch(`/api/rab/master/sub-bidang?bidang=${encodeURIComponent(bidang)}`);
-    const data = await res.json();
-    if (data.success) {
-      data.list.forEach(v => {
-        const opt = document.createElement('option');
-        opt.value = v;
-        opt.textContent = v;
-        sel.appendChild(opt);
-      });
-      sel.disabled = false;
-    }
-  } catch (err) { console.error(err); }
-}
+function renderBidangList(data) {
+    const listContainer = document.getElementById('rabBidangList');
+    listContainer.innerHTML = '';
 
-async function loadSubSubBidang(sub_bidang) {
-  const sel = document.getElementById('rabSubSubBidang');
-  try {
-    const res = await fetch(`/api/rab/master/sub-sub-bidang?sub_bidang=${encodeURIComponent(sub_bidang)}`);
-    const data = await res.json();
-    if (data.success) {
-      data.list.forEach(v => {
-        const opt = document.createElement('option');
-        opt.value = v;
-        opt.textContent = v;
-        sel.appendChild(opt);
-      });
-      sel.disabled = false;
-    }
-  } catch (err) { console.error(err); }
-}
-
-async function loadKegiatan(sub_sub_bidang) {
-  const sel = document.getElementById('rabKegiatan');
-  try {
-    const res = await fetch(`/api/rab/master/kegiatan?sub_sub_bidang=${encodeURIComponent(sub_sub_bidang)}`);
-    const data = await res.json();
-    if (data.success) {
-      data.list.forEach(v => {
-        const opt = document.createElement('option');
-        opt.value = v;
-        opt.textContent = v;
-        sel.appendChild(opt);
-      });
-      sel.disabled = false;
-    }
-  } catch (err) { console.error(err); }
-}
-
-async function loadBelanja(kegiatan) {
-  const sel = document.getElementById('rabBelanja');
-  try {
-    const res = await fetch(`/api/rab/master/belanja?kegiatan=${encodeURIComponent(kegiatan)}`);
-    const data = await res.json();
-    if (data.success) {
-      data.list.forEach(v => {
-        const opt = document.createElement('option');
-        opt.value = v.id;
-        opt.textContent = v.belanja;
-        sel.appendChild(opt);
-      });
-      sel.disabled = false;
-    }
-  } catch (err) { console.error(err); }
-}
-
-// ── CRUD Operations ──
-
-async function saveRab() {
-  const masterId = document.getElementById('rabBelanja').value;
-  const tahun = document.getElementById('rabTahun').value;
-  const nominalRaw = document.getElementById('rabNominal').value;
-  const sumberDana = document.getElementById('rabSumberDana').value;
-
-  if (!masterId || !tahun || !nominalRaw) {
-    showToast('Mohon lengkapi semua data.', 'error');
-    return;
-  }
-
-  const nominal = nominalRaw.replace(/\./g, ''); // Clean format dots
-
-  try {
-    const res = await fetch('/api/rab/save', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ master_id: masterId, tahun, nominal, sumber_dana: sumberDana })
-    });
-    const data = await res.json();
-
-    if (data.success) {
-      showToast('Data RAB berhasil disimpan!', 'success');
-      document.getElementById('rabForm').reset();
-      resetDropdowns(['subBidang', 'subSubBidang', 'kegiatan', 'belanja']);
-      loadRabList();
-      updateDashboardStats();
-    } else {
-      showToast('Gagal menyimpan: ' + data.message, 'error');
-    }
-  } catch (err) {
-    console.error(err);
-    showToast('Terjadi kesalahan sistem.', 'error');
-  }
-}
-
-async function loadRabList() {
-  const tbody = document.getElementById('rabTableBody');
-  if (!tbody) return;
-
-  try {
-    const res = await fetch('/api/rab/list');
-    const data = await res.json();
-
-    if (data.success) {
-      const list = data.data;
-      if (list.length === 0) {
-        document.getElementById('rabEmptyState').style.display = 'block';
-        tbody.innerHTML = '';
+    if (data.length === 0) {
+        listContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-muted);">Data kosong.</div>';
         return;
-      }
+    }
 
-      document.getElementById('rabEmptyState').style.display = 'none';
-      tbody.innerHTML = '';
-      list.forEach((item, index) => {
-        const tr = document.createElement('tr');
-        const nominalStr = new Intl.NumberFormat('id-ID').format(item.nominal);
-        tr.innerHTML = `
-          <td>${index + 1}</td>
-          <td>
-            <div style="font-weight:600; color:var(--primary); font-size:0.85rem;">${item.bidang}</div>
-            <div style="font-size:0.75rem; color:var(--text-muted);">${item.sub_bidang} » ${item.sub_sub_bidang}</div>
-            <div style="margin-top:4px; font-weight:500;">${item.kegiatan}</div>
-          </td>
-          <td>${item.belanja}</td>
-          <td style="font-weight:600; color:var(--success);">Rp. ${nominalStr}</td>
-          <td><span class="badge" style="background:rgba(0,0,0,0.05); color:var(--text-main); border:1px solid var(--border-color);">${item.tahun}</span></td>
-          <td>
-            <button class="btn-action btn-danger" onclick="hapusRab(${item.id})" title="Hapus">🗑️</button>
-          </td>
+    const firstRow = data[0];
+    const keys = Object.keys(firstRow);
+    const bidangKey = keys.find(k => k.toLowerCase().includes('bidang')) || keys[1] || keys[0];
+
+    data.forEach((item, index) => {
+        const bidangName = item[bidangKey];
+        if (!bidangName) return;
+
+        const div = document.createElement('div');
+        div.className = 'rab-bidang-item';
+        div.style.padding = '12px 16px';
+        div.style.margin = '4px 0';
+        div.style.borderRadius = '8px';
+        div.style.cursor = 'pointer';
+        div.style.fontSize = '0.9rem';
+        div.style.fontWeight = '500';
+        div.style.transition = 'all 0.2s';
+        div.style.border = '1px solid transparent';
+        div.style.display = 'flex';
+        div.style.alignItems = 'center';
+        div.style.gap = '10px';
+        div.innerHTML = `
+            <span style="background: #e2e8f0; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 0.75rem;">${index + 1}</span>
+            <span style="flex: 1;">${bidangName}</span>
         `;
-        tbody.appendChild(tr);
-      });
-    }
-  } catch (err) { console.error(err); }
-}
 
-async function hapusRab(id) {
-  if (!confirm('Apakah Anda yakin ingin menghapus data RAB ini?')) return;
-  try {
-    const res = await fetch(`/api/rab/${id}`, { method: 'DELETE' });
-    const data = await res.json();
-    if (data.success) {
-      showToast('Data berhasil dihapus.', 'success');
-      loadRabList();
-      updateDashboardStats();
-    }
-  } catch (err) { console.error(err); }
-}
+        div.onclick = () => {
+            document.querySelectorAll('.rab-bidang-item').forEach(el => {
+                el.style.background = 'transparent';
+                el.style.borderColor = 'transparent';
+                el.style.color = 'inherit';
+                el.classList.remove('active');
+            });
 
-// ── Helpers ──
+            div.style.background = 'var(--primary-light)';
+            div.style.borderColor = 'var(--primary)';
+            div.style.color = 'white';
+            div.classList.add('active');
 
-function resetDropdowns(ids) {
-  const map = {
-    subBidang: 'rabSubBidang',
-    subSubBidang: 'rabSubSubBidang',
-    kegiatan: 'rabKegiatan',
-    belanja: 'rabBelanja'
-  };
+            showHierarchy(bidangName, index + 1);
+        };
 
-  ids.forEach(idKey => {
-    const el = document.getElementById(map[idKey]);
-    if (el) {
-      el.innerHTML = `<option value="" disabled selected>Pilih ${idKey.replace(/([A-Z])/g, ' $1').trim()}...</option>`;
-      el.disabled = true;
-    }
-  });
-}
-
-function initRabNominalFormat() {
-  const input = document.getElementById('rabNominal');
-  if (input) {
-    input.addEventListener('input', (e) => {
-      let val = e.target.value.replace(/[^0-9]/g, '');
-      if (val) {
-        e.target.value = new Intl.NumberFormat('id-ID').format(val);
-      } else {
-        e.target.value = '';
-      }
+        listContainer.appendChild(div);
     });
-  }
 }
 
-// Export for page switching
-window.initRabPage = () => {
-  initRabForm();
-  loadRabList();
-  initRabNominalFormat();
-};
+function showHierarchy(bidangName, bidangIndex) {
+    const titleContainer = document.getElementById('rabSelectedBidangTitle');
+    const contentContainer = document.getElementById('rabSubBidangContent');
+
+    titleContainer.textContent = bidangName;
+
+    const subs = rabHierarchy[bidangName] || {};
+    const subNames = Object.keys(subs);
+
+    if (subNames.length === 0) {
+        contentContainer.innerHTML = `
+            <div style="background: white; border-radius: 8px; border: 1px solid #e2e8f0; padding: 40px; text-align: center; color: var(--text-muted);">
+                Data rincian tidak ditemukan untuk bidang ini.
+            </div>
+        `;
+        return;
+    }
+
+    let html = '';
+
+    subNames.forEach((subName, subIdx) => {
+        const subCode = `${bidangIndex}.${String(subIdx + 1).padStart(2, '0')}`;
+        const subSubList = subs[subName];
+
+        html += `
+            <div style="background: white; border-radius: 8px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 24px;">
+                <div style="padding: 14px 18px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-family: monospace; background: var(--primary); color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: 600;">${subCode}</span>
+                        <span style="font-weight: 700; color: var(--text-dark); font-size: 0.95rem;">${subName}</span>
+                    </div>
+                </div>
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                    <thead>
+                        <tr style="background: #f1f5f9; text-align: left;">
+                            <th style="padding: 10px 18px; border-bottom: 1px solid #e2e8f0; width: 100px; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Kode</th>
+                            <th style="padding: 10px 18px; border-bottom: 1px solid #e2e8f0; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Nama Sub-Sub Bidang / Kegiatan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        if (subSubList && subSubList.length > 0) {
+            subSubList.forEach((subSubName, ssIdx) => {
+                const ssCode = `${subCode}.${String(ssIdx + 1).padStart(2, '0')}`;
+                html += `
+                    <tr style="border-bottom: 1px solid #f8fafc;">
+                        <td style="padding: 12px 18px; font-family: monospace; color: var(--primary); font-weight: 600;">${ssCode}</td>
+                        <td style="padding: 12px 18px; color: var(--text-main); font-weight: 500;">${subSubName}</td>
+                    </tr>
+                `;
+            });
+        } else {
+            html += `<tr><td colspan="2" style="padding: 20px; text-align: center; color: var(--text-muted);">Tidak ada rincian sub-sub bidang.</td></tr>`;
+        }
+
+        html += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+    });
+
+    contentContainer.innerHTML = html;
+}
+
+window.initRab = initRab;

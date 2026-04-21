@@ -857,6 +857,7 @@ function openPrintModal() {
   if (btnDownloadWord) {
     if (lastSavedId) {
       btnDownloadWord.href = `/api/sppd/generate-docx/${lastSavedId}`;
+      btnDownloadWord.onclick = null; // Clear previous handler
       btnDownloadWord.style.display = 'flex'; // Ensure it's visible
     } else {
       btnDownloadWord.style.display = 'none'; // Hide if no ID (safety)

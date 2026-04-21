@@ -66,6 +66,18 @@
               <span>SPPD</span>
             </a>
           </li>
+          <li>
+            <a href="#" class="sidebar-link" data-page="rab">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="3" y1="9" x2="21" y2="9"></line>
+                <line x1="3" y1="15" x2="21" y2="15"></line>
+                <line x1="9" y1="3" x2="9" y2="21"></line>
+                <line x1="15" y1="3" x2="15" y2="21"></line>
+              </svg>
+              <span>RAB</span>
+            </a>
+          </li>
           <li class="sidebar-dropdown">
             <a href="#" class="sidebar-link sidebar-dropdown-toggle" id="suratDropdownToggle">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -476,6 +488,42 @@
         </div>
 
 
+        <!-- ═══════════════ PAGE: RAB ═══════════════ -->
+        <div class="page-section" id="page-rab">
+          <div class="page-header-section">
+            <div>
+              <h1>📊 Rencana Anggaran Biaya (RAB)</h1>
+              <p>Daftar Bidang dan Sub Bidang Kegiatan Desa</p>
+            </div>
+          </div>
+
+          <div class="rab-container" style="display: grid; grid-template-columns: 350px 1fr; gap: 20px; background: white; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; height: calc(100vh - 250px);">
+            <!-- Sidebar Bidang -->
+            <div class="rab-sidebar" style="border-right: 1px solid #e2e8f0; background: #f8fafc; display: flex; flex-direction: column;">
+              <div style="padding: 16px; border-bottom: 1px solid #e2e8f0; background: white;">
+                <h3 style="margin: 0; font-size: 1rem; color: var(--text-dark);">Daftar Bidang</h3>
+              </div>
+              <div id="rabBidangList" style="flex: 1; overflow-y: auto; padding: 8px;">
+                <div style="padding: 20px; text-align: center; color: var(--text-muted);">Memuat data...</div>
+              </div>
+            </div>
+
+            <!-- Content Sub Bidang -->
+            <div class="rab-content" style="display: flex; flex-direction: column;">
+              <div style="padding: 16px; border-bottom: 1px solid #e2e8f0; background: white; display: flex; justify-content: space-between; align-items: center;">
+                <h3 id="rabSelectedBidangTitle" style="margin: 0; font-size: 1rem; color: var(--text-dark);">Pilih Bidang di Sebelah Kiri</h3>
+              </div>
+              <div id="rabSubBidangContent" style="flex: 1; overflow-y: auto; padding: 20px; background: #f1f5f9;">
+                <div style="background: white; border-radius: 8px; border: 1px solid #e2e8f0; padding: 40px; text-align: center; color: var(--text-muted);">
+                  <div style="font-size: 3rem; margin-bottom: 16px;">📂</div>
+                  <p>Klik salah satu bidang di daftar sebelah kiri untuk melihat rincian sub bidang kegiatan.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
         <!-- ═══════════════ PAGE: NARASUMBER ═══════════════ -->
         <div class="page-section" id="page-narasumber">
           <div class="page-header-section">
@@ -485,14 +533,7 @@
             </div>
           </div>
 
-          <!-- Quick Stats -->
-          <div class="stats-grid" style="margin-bottom:28px;">
-            <div class="stat-card">
-              <div class="stat-icon blue">👥</div>
-              <div class="stat-value" id="statNarasumberTotal">0</div>
-              <div class="stat-label">Total Data Narasumber</div>
-            </div>
-          </div>
+
 
           <!-- Narasumber Form Card -->
           <div class="form-card" id="narasumberFormCard" style="margin-bottom:28px;">
@@ -933,6 +974,7 @@
   <script src="js/dashboard.js"></script>
   <script src="js/sppd.js"></script>
   <script src="js/narasumber.js"></script>
+  <script src="js/rab.js"></script>
   <script src="js/surat-ahli-waris.js"></script>
   <script src="js/settings.js"></script>
 </body>
