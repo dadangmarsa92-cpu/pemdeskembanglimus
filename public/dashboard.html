@@ -497,26 +497,39 @@
             </div>
           </div>
 
-          <div class="rab-container" style="display: grid; grid-template-columns: 350px 1fr; gap: 20px; background: white; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; height: calc(100vh - 250px);">
-            <!-- Sidebar Bidang -->
-            <div class="rab-sidebar" style="border-right: 1px solid #e2e8f0; background: #f8fafc; display: flex; flex-direction: column;">
+          <div class="rab-container" style="display: grid; grid-template-columns: 300px 350px 1fr; gap: 0; background: white; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; height: calc(100vh - 250px);">
+            <!-- Kolom 1: Bidang -->
+            <div class="rab-col-bidang" style="border-right: 1px solid #e2e8f0; background: #f8fafc; display: flex; flex-direction: column;">
               <div style="padding: 16px; border-bottom: 1px solid #e2e8f0; background: white;">
-                <h3 style="margin: 0; font-size: 1rem; color: var(--text-dark);">Daftar Bidang</h3>
+                <h3 style="margin: 0; font-size: 0.9rem; font-weight: 700; color: var(--text-dark); text-transform: uppercase;">1. Bidang</h3>
               </div>
               <div id="rabBidangList" style="flex: 1; overflow-y: auto; padding: 8px;">
-                <div style="padding: 20px; text-align: center; color: var(--text-muted);">Memuat data...</div>
+                <div style="padding: 20px; text-align: center; color: var(--text-muted);">Memuat...</div>
               </div>
             </div>
 
-            <!-- Content Sub Bidang -->
-            <div class="rab-content" style="display: flex; flex-direction: column;">
-              <div style="padding: 16px; border-bottom: 1px solid #e2e8f0; background: white; display: flex; justify-content: space-between; align-items: center;">
-                <h3 id="rabSelectedBidangTitle" style="margin: 0; font-size: 1rem; color: var(--text-dark);">Pilih Bidang di Sebelah Kiri</h3>
+            <!-- Kolom 2: Sub Bidang -->
+            <div class="rab-col-sub" style="border-right: 1px solid #e2e8f0; background: #fdfdfd; display: flex; flex-direction: column;">
+              <div style="padding: 16px; border-bottom: 1px solid #e2e8f0; background: white;">
+                <h3 style="margin: 0; font-size: 0.9rem; font-weight: 700; color: var(--text-dark); text-transform: uppercase;">2. Sub Bidang</h3>
               </div>
-              <div id="rabSubBidangContent" style="flex: 1; overflow-y: auto; padding: 20px; background: #f1f5f9;">
-                <div style="background: white; border-radius: 8px; border: 1px solid #e2e8f0; padding: 40px; text-align: center; color: var(--text-muted);">
+              <div id="rabSubBidangList" style="flex: 1; overflow-y: auto; padding: 8px;">
+                <div style="padding: 40px 20px; text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+                  <span style="font-size: 1.5rem; display: block; margin-bottom: 8px;">⬅️</span>
+                  Pilih Bidang terlebih dahulu
+                </div>
+              </div>
+            </div>
+
+            <!-- Kolom 3: Sub Sub Bidang -->
+            <div class="rab-col-ss" style="background: #f1f5f9; display: flex; flex-direction: column;">
+              <div style="padding: 16px; border-bottom: 1px solid #e2e8f0; background: white;">
+                <h3 id="rabSelectedSubTitle" style="margin: 0; font-size: 0.9rem; font-weight: 700; color: var(--text-dark); text-transform: uppercase;">3. Rincian Kegiatan</h3>
+              </div>
+              <div id="rabSubSubContent" style="flex: 1; overflow-y: auto; padding: 20px;">
+                <div style="background: white; border-radius: 8px; border: 1px solid #e2e8f0; padding: 60px 40px; text-align: center; color: var(--text-muted);">
                   <div style="font-size: 3rem; margin-bottom: 16px;">📂</div>
-                  <p>Klik salah satu bidang di daftar sebelah kiri untuk melihat rincian sub bidang kegiatan.</p>
+                  <p>Pilih Sub Bidang untuk melihat rincian kegiatan (Sub-Sub Bidang).</p>
                 </div>
               </div>
             </div>
