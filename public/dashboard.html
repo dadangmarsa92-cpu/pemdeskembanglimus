@@ -490,10 +490,35 @@
 
         <!-- ═══════════════ PAGE: RAB ═══════════════ -->
         <div class="page-section" id="page-rab">
-          <div class="page-header-section">
+          <div class="page-header-section" style="display: flex; justify-content: space-between; align-items: center;">
             <div>
               <h1>📊 Rencana Anggaran Biaya (RAB)</h1>
               <p>Daftar Bidang dan Sub Bidang Kegiatan Desa</p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+              <!-- Search box -->
+              <div style="display: flex; align-items: center; gap: 8px; background: white; padding: 6px 12px; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: var(--shadow-sm);">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="rabSearchInput" placeholder="Cari nama / judul kegiatan..." style="border:none; outline:none; font-size:0.88rem; width:220px; color:var(--text-dark); background:transparent;" onkeydown="if(event.key==='Enter') searchRab()">
+              </div>
+              <button class="btn-save" style="background:#0ea5e9; display:flex; align-items:center; gap:6px; padding:6px 14px; font-size:0.85rem;" onclick="searchRab()">
+                🔍 Cari
+              </button>
+              <!-- Tahun + Cetak -->
+              <div style="display: flex; align-items: center; gap: 12px; background: white; padding: 8px 16px; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: var(--shadow-sm);">
+                <label for="rabTahunSelector" style="font-weight: 600; color: var(--text-dark); margin: 0;">Tahun Anggaran:</label>
+                <select id="rabTahunSelector" class="form-input" style="width: 100px; font-weight: bold; padding: 6px 12px; margin: 0; min-height: unset;">
+                  <!-- Diisi oleh JS -->
+                </select>
+                <button class="btn-save" style="background:#2b579a; display:flex; align-items:center; gap:6px; padding:6px 12px; font-size:0.85rem;" onclick="cetakRabSemua()">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1-2 2h-2"></path>
+                    <rect x="6" y="14" width="12" height="8"></rect>
+                  </svg>
+                  Cetak Tahun Ini
+                </button>
+              </div>
             </div>
           </div>
 
@@ -522,7 +547,7 @@
             </div>
 
             <!-- Kolom 3: Sub Sub Bidang -->
-            <div class="rab-col-ss" style="background: #f1f5f9; display: flex; flex-direction: column;">
+            <div class="rab-col-ss" style="background: #f1f5f9; display: flex; flex-direction: column; min-height: 0;">
               <div style="padding: 16px; border-bottom: 1px solid #e2e8f0; background: white;">
                 <h3 id="rabSelectedSubTitle" style="margin: 0; font-size: 0.9rem; font-weight: 700; color: var(--text-dark); text-transform: uppercase;">3. Rincian Kegiatan</h3>
               </div>
@@ -532,6 +557,90 @@
                   <p>Pilih Sub Bidang untuk melihat rincian kegiatan (Sub-Sub Bidang).</p>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ MODAL SEARCH HASIL RAB ═══ -->
+        <div class="modal-overlay" id="rabSearchModal" style="display:none; z-index:1100;">
+          <div class="modal-card" style="max-width:760px; width:95%; padding:28px;">
+            <div class="modal-header" style="margin-bottom:16px;">
+              <h3 id="rabSearchModalTitle">🔍 Hasil Pencarian RAB</h3>
+              <button class="modal-close" onclick="document.getElementById('rabSearchModal').style.display='none'">&times;</button>
+            </div>
+            <div id="rabSearchResults" style="max-height:60vh; overflow-y:auto;"></div>
+          </div>
+        </div>
+
+        <!-- ═══ MODAL RINCIAN RAB ═══ -->
+        <style>
+          /* Override hover for total row */
+          .data-table tr.total-row:hover td {
+            background: #e0f2fe !important;
+          }
+        </style>
+        <div class="modal-overlay" id="rabRincianModal">
+          <div class="modal-card detail-modal" style="max-width: 1400px !important; width: 98% !important; padding: 24px !important;">
+            <div class="modal-header">
+              <h3 id="rabRincianModalTitle">📝 Form Rincian Kegiatan (RAB)</h3>
+              <button class="modal-close" onclick="closeRabRincianModal()">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 24px; max-height: 75vh; overflow-y: auto; background: #f8fafc;">
+              <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 20px; box-shadow: var(--shadow-sm);">
+                <p style="margin:0; font-size:0.85rem; color:var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Sub-Sub Bidang (Rincian Kegiatan)</p>
+                <h4 id="rabRincianModalSubtitle" style="margin: 6px 0 0; font-size: 1.2rem; color:var(--primary); font-weight: 700;">-</h4>
+                <div style="margin-top: 12px; border-top: 1px dashed var(--border-color); padding-top: 12px;">
+                  <input type="text" id="rabRincianJudulKegiatan" class="form-input" placeholder="Masukkan Judul Kegiatan (Opsional)..." style="width: 100%; font-weight: 500;">
+                </div>
+              </div>
+              <div style="overflow-x: auto; background: white; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
+                <table class="data-table" id="rabRincianTable" style="min-width: 900px; margin: 0; border: none;">
+                  <thead>
+                    <tr style="background: #f1f5f9;">
+                      <th rowspan="2" style="width:40px; text-align:center; border-bottom: 2px solid var(--border-color); border-right: 1px solid var(--border-color);">No</th>
+                      <th rowspan="2" style="border-bottom: 2px solid var(--border-color); border-right: 1px solid var(--border-color);">Uraian</th>
+                      <th colspan="2" style="text-align:center; border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color);">Volume 1</th>
+                      <th colspan="2" style="text-align:center; border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color);">Volume 2</th>
+                      <th rowspan="2" style="width: 140px; text-align:right; border-bottom: 2px solid var(--border-color); border-right: 1px solid var(--border-color);">Harga Sat (Rp)</th>
+                      <th rowspan="2" style="width: 140px; text-align:right; border-bottom: 2px solid var(--border-color);">Total (Rp)</th>
+                    </tr>
+                    <tr style="background: #f8fafc;">
+                      <th style="width: 70px; text-align:center; border-bottom: 2px solid var(--border-color); border-right: 1px solid var(--border-color); font-size: 0.75rem;">Vol</th>
+                      <th style="width: 80px; text-align:center; border-bottom: 2px solid var(--border-color); border-right: 1px solid var(--border-color); font-size: 0.75rem;">Satuan</th>
+                      <th style="width: 70px; text-align:center; border-bottom: 2px solid var(--border-color); border-right: 1px solid var(--border-color); font-size: 0.75rem;">Vol</th>
+                      <th style="width: 80px; text-align:center; border-bottom: 2px solid var(--border-color); border-right: 1px solid var(--border-color); font-size: 0.75rem;">Satuan</th>
+                    </tr>
+                  </thead>
+                  <tbody id="rabRincianTableBody">
+                    <!-- JS Injected -->
+                  </tbody>
+                  <tfoot>
+                    <tr class="total-row">
+                      <td colspan="7" style="background: #e0f2fe; color: #0369a1; text-align: right; padding: 14px 20px; font-weight: 700; font-size: 1.1rem; border-right: 1px solid #bae6fd; border-bottom: none;">TOTAL KESELURUHAN</td>
+                      <td id="rabRincianTotalKeseluruhan" style="background: #e0f2fe; color: #0369a1; text-align: right; padding: 14px 20px; font-weight: 800; font-size: 1.1rem; border-bottom: none;">Rp. 0</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+            <div class="modal-actions" style="padding: 16px 24px; background: white; border-top: 1px solid var(--border-color); display:flex; justify-content:flex-end; gap:12px; border-radius: 0 0 12px 12px;">
+              <button class="btn-save" style="background:#2b579a; margin-right:auto;" onclick="cetakRabKegiatanIni()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;vertical-align:middle;">
+                  <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                  <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                  <rect x="6" y="14" width="12" height="8"></rect>
+                </svg>
+                Cetak Kegiatan Ini
+              </button>
+              <button class="btn-cancel" onclick="closeRabRincianModal()">Tutup</button>
+              <button class="btn-save" onclick="saveRabRincian()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;vertical-align:middle;">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                  <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                  <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+                Simpan RAB
+              </button>
             </div>
           </div>
         </div>
@@ -932,10 +1041,46 @@
 
             <!-- ── SUB-PAGE: LAPORAN RAB ── -->
             <div class="laporan-tab-content" id="laporan-rab" style="display:none;">
-              <div class="empty-state" style="padding:60px;">
-                <div class="empty-icon">💰</div>
-                <h3>Laporan RAB</h3>
-                <p>Modul laporan Rencana Anggaran Biaya akan ditampilkan di sini.</p>
+              <div class="filter-bar" style="margin-bottom:24px; display:flex; gap:12px; align-items:flex-end;">
+                <div class="form-group" style="margin-bottom:0; width:120px;">
+                  <label>Tahun Anggaran</label>
+                  <select id="laporanRabTahun" class="form-input" style="padding-left:12px;"></select>
+                </div>
+                <button class="btn-save" onclick="loadLaporanRab()" style="height:44px; padding:0 24px;">🔍 Lihat Laporan</button>
+                <button class="btn-save" onclick="printLaporanRabPdf()" style="height:44px; padding:0 16px; background:var(--primary-light);">🖨️ Cetak PDF</button>
+              </div>
+
+              <div id="laporanRabContent">
+                <div class="stats-grid" style="margin-bottom:28px;">
+                  <div class="stat-card">
+                    <div class="stat-icon blue">💰</div>
+                    <div class="stat-value" id="rekapRabGrandTotal">Rp. 0</div>
+                    <div class="stat-label">Total Keseluruhan RAB</div>
+                  </div>
+                  <div class="stat-card">
+                    <div class="stat-icon teal">📁</div>
+                    <div class="stat-value" id="rekapRabBidangCount">0</div>
+                    <div class="stat-label">Jumlah Bidang</div>
+                  </div>
+                </div>
+
+                <div class="table-section">
+                  <h2>📈 Ringkasan RAB per Bidang & Sub Bidang</h2>
+                  <div style="overflow-x:auto;">
+                    <table class="data-table" id="laporanRabTable">
+                      <thead>
+                        <tr style="background:#f1f5f9;">
+                          <th style="width:80px;">Kode</th>
+                          <th>Bidang / Sub Bidang</th>
+                          <th style="width:200px; text-align:right;">Total Anggaran (Rp)</th>
+                        </tr>
+                      </thead>
+                      <tbody id="laporanRabTableBody">
+                        <tr><td colspan="3" style="text-align:center;padding:40px;color:var(--text-muted);">Klik tombol "Lihat Laporan" untuk menampilkan data.</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
             </div>
 

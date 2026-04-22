@@ -208,6 +208,7 @@ function navigateTo(page) {
   if (page === 'laporan') {
     initLaporanTabs();
     loadLaporanSppd();
+    if (typeof initRab === 'function') initRab();
   }
 
   if (page === 'narasumber' && typeof loadNarasumberData === 'function') {
@@ -241,6 +242,12 @@ function initLaporanTabs() {
       contents.forEach(c => {
         c.style.display = c.id === target ? 'block' : 'none';
       });
+
+      // Special handling for RAB report
+      if (target === 'laporan-rab' && typeof loadLaporanRab === 'function') {
+        // Option: automatically load if not loaded yet
+        // loadLaporanRab(); 
+      }
     };
   });
 }

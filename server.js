@@ -6,6 +6,7 @@ const fs = require('fs');
 const PizZip = require('pizzip');
 const Docxtemplater = require('docxtemplater');
 const XLSX = require('xlsx');
+const ExcelJS = require('exceljs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -36,13 +37,23 @@ async function initDatabase() {
       `CREATE TABLE IF NOT EXISTS sppd (id INTEGER PRIMARY KEY AUTOINCREMENT, nomor_surat TEXT NOT NULL, nama_pegawai TEXT NOT NULL, jabatan TEXT NOT NULL, acara TEXT NOT NULL, kendaraan TEXT NOT NULL, tujuan TEXT NOT NULL, lama_perjalanan TEXT NOT NULL, tanggal_berangkat TEXT NOT NULL, tanggal_kembali TEXT NOT NULL, dasar_surat TEXT, nomor_surat_dasar TEXT, nominal_rupiah TEXT, file_base64 TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`,
       `CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)`,
       `CREATE TABLE IF NOT EXISTS narasumber (id INTEGER PRIMARY KEY AUTOINCREMENT, nomor_surat TEXT NOT NULL, tanggal_surat TEXT NOT NULL, nama_narasumber TEXT NOT NULL, bidang TEXT NOT NULL, kegiatan TEXT NOT NULL, tempat_pelaksanaan TEXT NOT NULL, tanggal_pelaksanaan TEXT NOT NULL, waktu_pelaksanaan TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`,
-      `CREATE TABLE IF NOT EXISTS surat_ahli_waris (id INTEGER PRIMARY KEY AUTOINCREMENT, nomor_surat TEXT NOT NULL, tanggal_surat TEXT NOT NULL, nama_pewaris TEXT NOT NULL, tempat_lahir_pewaris TEXT NOT NULL, tgl_lahir_pewaris TEXT NOT NULL, tgl_meninggal TEXT NOT NULL, alamat_pewaris TEXT NOT NULL, nama_ahli_waris TEXT NOT NULL, hubungan TEXT NOT NULL, nik_ahli_waris TEXT NOT NULL, alamat_ahli_waris TEXT NOT NULL, keterangan TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`
+      `CREATE TABLE IF NOT EXISTS surat_ahli_waris (id INTEGER PRIMARY KEY AUTOINCREMENT, nomor_surat TEXT NOT NULL, tanggal_surat TEXT NOT NULL, nama_pewaris TEXT NOT NULL, tempat_lahir_pewaris TEXT NOT NULL, tgl_lahir_pewaris TEXT NOT NULL, tgl_meninggal TEXT NOT NULL, alamat_pewaris TEXT NOT NULL, nama_ahli_waris TEXT NOT NULL, hubungan TEXT NOT NULL, nik_ahli_waris TEXT NOT NULL, alamat_ahli_waris TEXT NOT NULL, keterangan TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`,
+      `CREATE TABLE IF NOT EXISTS rab_records (id INTEGER PRIMARY KEY AUTOINCREMENT, tahun TEXT NOT NULL, ss_code TEXT NOT NULL, ss_name TEXT NOT NULL, judul_kegiatan TEXT DEFAULT '', data_json TEXT NOT NULL, grand_total REAL NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, UNIQUE(tahun, ss_code))`
     ];
 
     for (const sql of tables) {
       db.run(sql);
       await new Promise(r => setTimeout(r, 50));
     }
+    
+    // Add new column to existing table if necessary
+    try {
+      db.run("ALTER TABLE rab_records ADD COLUMN judul_kegiatan TEXT DEFAULT ''");
+      console.log('✅ Added judul_kegiatan to rab_records.');
+    } catch (e) {
+      // Column might already exist, ignore
+    }
+    
     console.log('✅ Tables ready.');
 
     // --- SEED DATA ---
@@ -208,7 +219,10 @@ app.get('/api/rab', (req, res) => {
     let bidangData = [];
     if (fs.existsSync(bidangPath)) {
       const wb = XLSX.readFile(bidangPath);
-      bidangData = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 });
+      bidangData = rows
+        .filter(r => r[1]) // only rows with a bidang name
+        .map(r => ({ no: r[0], nama_bidang: r[1] }));
     }
 
     let hierarchy = {};
@@ -248,6 +262,197 @@ app.get('/api/rab', (req, res) => {
   } catch (err) {
     console.error('Error reading RAB Excel:', err);
     res.status(500).json({ success: false, message: 'Gagal membaca file Excel RAB.' });
+  }
+});
+
+// Get Rincian Kegiatan Details
+app.get('/api/rab/rincian', async (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ success: false, message: 'Belum login.' });
+
+  const { subSubBidangName } = req.query;
+  if (!subSubBidangName) {
+    return res.status(400).json({ success: false, message: 'Parameter subSubBidangName diperlukan.' });
+  }
+
+  try {
+    const rincianPath = path.join(__dirname, 'templates', 'rincian_kegiatan.xlsx');
+    if (!fs.existsSync(rincianPath)) {
+      return res.status(404).json({ success: false, message: 'File rincian_kegiatan.xlsx tidak ditemukan.' });
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.readFile(rincianPath);
+    const sheet = workbook.worksheets[0];
+
+    // Find the column index for the requested Sub-Sub Bidang (Row 1 in exceljs is 1-based)
+    let targetColIndex = -1;
+    const headerRow = sheet.getRow(1);
+    
+    headerRow.eachCell({ includeEmpty: false }, (cell, colNumber) => {
+      // ExcelJS cell value might be a rich text object or string
+      let val = cell.value;
+      if (val && typeof val === 'object' && val.richText) {
+        val = val.richText.map(rt => rt.text).join('');
+      }
+      if (val && String(val).trim().toLowerCase() === String(subSubBidangName).trim().toLowerCase()) {
+        targetColIndex = colNumber;
+      }
+    });
+
+    if (targetColIndex === -1) {
+      return res.json({ success: true, data: [], message: 'Data rincian tidak ditemukan untuk kegiatan ini.' });
+    }
+
+    // Extract items from row 2 downwards
+    const items = [];
+    sheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+      if (rowNumber > 1) {
+        const cell = row.getCell(targetColIndex);
+        let val = cell.value;
+        if (val && typeof val === 'object' && val.richText) {
+            val = val.richText.map(rt => rt.text).join('');
+        }
+        
+        if (val && String(val).trim() !== '') {
+          items.push({
+            uraian: String(val).trim(),
+            isBold: cell.font && cell.font.bold === true
+          });
+        }
+      }
+    });
+
+    res.json({ success: true, data: items });
+  } catch (err) {
+    console.error('Error reading rincian kegiatan Excel:', err);
+    res.status(500).json({ success: false, message: 'Gagal membaca file rincian_kegiatan.xlsx.' });
+  }
+});
+
+// Get Saved RAB Data
+app.get('/api/rab/saved', (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ success: false, message: 'Belum login.' });
+
+  const { tahun, ss_code } = req.query;
+  if (!tahun || !ss_code) {
+    return res.status(400).json({ success: false, message: 'Parameter tahun dan ss_code diperlukan.' });
+  }
+
+  try {
+    const stmt = db.prepare('SELECT data_json, grand_total, judul_kegiatan FROM rab_records WHERE tahun = ? AND ss_code = ?');
+    stmt.bind([tahun, ss_code]);
+    
+    if (stmt.step()) {
+      const row = stmt.getAsObject();
+      stmt.free();
+      res.json({ success: true, data: JSON.parse(row.data_json), grand_total: row.grand_total, judul_kegiatan: row.judul_kegiatan });
+    } else {
+      stmt.free();
+      res.json({ success: true, data: null }); // Tidak ada data tersimpan
+    }
+  } catch (err) {
+    console.error('Error fetching saved RAB:', err);
+    res.status(500).json({ success: false, message: 'Gagal mengambil data tersimpan.' });
+  }
+});
+
+// Get All Saved RAB Data for a Year
+app.get('/api/rab/saved-all', (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ success: false, message: 'Belum login.' });
+
+  const { tahun } = req.query;
+  if (!tahun) {
+    return res.status(400).json({ success: false, message: 'Parameter tahun diperlukan.' });
+  }
+
+  try {
+    const stmt = db.prepare('SELECT ss_code, ss_name, judul_kegiatan, data_json, grand_total FROM rab_records WHERE tahun = ? ORDER BY ss_code ASC');
+    stmt.bind([tahun]);
+    
+    const records = [];
+    while (stmt.step()) {
+      const row = stmt.getAsObject();
+      records.push({
+        ss_code: row.ss_code,
+        ss_name: row.ss_name,
+        judul_kegiatan: row.judul_kegiatan,
+        data_json: JSON.parse(row.data_json),
+        grand_total: row.grand_total
+      });
+    }
+    stmt.free();
+    
+    res.json({ success: true, data: records });
+  } catch (err) {
+    console.error('Error fetching all saved RAB:', err);
+    res.status(500).json({ success: false, message: 'Gagal mengambil data semua RAB tersimpan.' });
+  }
+});
+
+// Search RAB Records by year + keyword (ss_name or judul_kegiatan)
+app.get('/api/rab/search', (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ success: false, message: 'Belum login.' });
+
+  const { tahun, q } = req.query;
+  if (!tahun) {
+    return res.status(400).json({ success: false, message: 'Parameter tahun diperlukan.' });
+  }
+
+  try {
+    let stmt;
+    const keyword = q ? `%${q}%` : '%';
+    stmt = db.prepare(`
+      SELECT ss_code, ss_name, judul_kegiatan, grand_total
+      FROM rab_records
+      WHERE tahun = ?
+        AND (ss_name LIKE ? OR judul_kegiatan LIKE ?)
+      ORDER BY ss_code ASC
+    `);
+    stmt.bind([tahun, keyword, keyword]);
+
+    const results = [];
+    while (stmt.step()) {
+      const row = stmt.getAsObject();
+      results.push({
+        ss_code: row.ss_code,
+        ss_name: row.ss_name,
+        judul_kegiatan: row.judul_kegiatan || '',
+        grand_total: row.grand_total
+      });
+    }
+    stmt.free();
+
+    res.json({ success: true, data: results, total: results.length });
+  } catch (err) {
+    console.error('Error searching RAB:', err);
+    res.status(500).json({ success: false, message: 'Gagal melakukan pencarian.' });
+  }
+});
+
+// Save RAB Data
+app.post('/api/rab/save', (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ success: false, message: 'Belum login.' });
+
+  const { tahun, ss_code, ss_name, judul_kegiatan, data_json, grand_total } = req.body;
+  if (!tahun || !ss_code || !ss_name || !data_json) {
+    return res.status(400).json({ success: false, message: 'Data tidak lengkap.' });
+  }
+
+  try {
+    const jsonString = JSON.stringify(data_json);
+    const stmt = db.prepare(`
+      INSERT OR REPLACE INTO rab_records (tahun, ss_code, ss_name, judul_kegiatan, data_json, grand_total)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `);
+    stmt.run([tahun, ss_code, ss_name, judul_kegiatan || '', jsonString, grand_total]);
+    stmt.free();
+    
+    saveDatabase();
+    
+    res.json({ success: true, message: 'Data Rincian Kegiatan RAB berhasil disimpan.' });
+  } catch (err) {
+    console.error('Error saving RAB:', err);
+    res.status(500).json({ success: false, message: 'Gagal menyimpan data RAB.' });
   }
 });
 

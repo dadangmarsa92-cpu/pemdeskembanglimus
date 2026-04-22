@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cetak RAB</title>
+    <style>
+        body { font-family: "Times New Roman", Times, serif; font-size: 11pt; line-height: 1.4; color: black; background: #ccc; margin: 0; padding: 20px; }
+        .print-container { background: white; width: 210mm; min-height: 297mm; padding: 15mm; margin: 0 auto 20px auto; box-shadow: 0 0 10px rgba(0,0,0,0.2); box-sizing: border-box; position: relative; }
+        .page-break { page-break-after: always; }
+        .header-title { text-align: center; font-weight: bold; font-size: 14pt; margin-bottom: 20px; text-transform: uppercase; }
+        .info-table { width: 100%; margin-bottom: 20px; font-weight: bold; font-size: 11pt; }
+        .info-table td { vertical-align: top; padding: 2px 0; }
+        .info-table td:first-child { width: 110px; }
+        .data-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 10pt; }
+        .data-table th, .data-table td { border: 1px solid black; padding: 6px; }
+        .data-table th { text-align: center; font-weight: bold; background: #f1f5f9 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .signature-container { display: flex; justify-content: flex-end; margin-top: 30px; }
+        .signature { width: 300px; text-align: center; }
+        .signature-name { font-weight: bold; text-decoration: underline; margin-top: 80px; }
+        
+        @media print {
+            @page { size: A4 portrait; margin: 15mm; }
+            body { background: white; padding: 0; }
+            .print-container { width: 100%; min-height: auto; margin: 0; padding: 0; box-shadow: none; border: none; }
+            .page-break { margin-bottom: 0; }
+            .data-table th { background: #f1f5f9 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+    </style>
+</head>
+<body>
+    <div id="loading" style="text-align:center; padding:50px; font-size:1.2rem; background:white; max-width: 600px; margin: 0 auto; border-radius: 8px;">Memuat Data RAB...</div>
+    <div id="content"></div>
+
+    <script>
+        function formatRupiah(number) {
+            return new Intl.NumberFormat('id-ID').format(number);
+        }
+
+        async function fetchPrintData() {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const tahun = params.get('tahun');
+                const ss_code = params.get('ss_code');
+
+                if (!tahun) {
+                    document.getElementById('loading').innerText = 'Parameter tahun tidak ditemukan.';
+                    return;
+                }
+
+                document.getElementById('loading').innerText = 'Memuat Pengaturan...';
+                const resSettings = await fetch('/api/settings');
+                const dataSettings = await resSettings.json();
+                const settings = dataSettings.settings || {};
+                const namaDesa = settings.nama_desa || 'Kembanglimus';
+                const kepalaDesa = settings.kepala_desa || 'SOETJI ARIMBI';
+
+                document.getElementById('loading').innerText = 'Memuat Hirarki RAB...';
+                const resRab = await fetch('/api/rab');
+                const dataRab = await resRab.json();
+                const hierarchy = dataRab.hierarchy || {};
+
+                document.getElementById('loading').innerText = 'Memuat Data Tersimpan...';
+                let records = [];
+                if (ss_code) {
+                    const resSaved = await fetch(`/api/rab/saved?tahun=${tahun}&ss_code=${ss_code}`);
+                    const dataSaved = await resSaved.json();
+                    if (dataSaved.success && dataSaved.data) {
+                        records.push({
+                            ss_code: ss_code,
+                            data_json: dataSaved.data,
+                            grand_total: dataSaved.grand_total
+                        });
+                    }
+                } else {
+                    const resAll = await fetch(`/api/rab/saved-all?tahun=${tahun}`);
+                    const dataAll = await resAll.json();
+                    if (dataAll.success && dataAll.data) {
+                        records = dataAll.data;
+                    }
+                }
+
+                if (records.length === 0) {
+                    document.getElementById('loading').innerHTML = '<span style="color:red">Data RAB tidak ditemukan atau belum diisi untuk tahun/kegiatan tersebut.</span>';
+                    return;
+                }
+                
+                let html = '';
+                
+                for (let idx = 0; idx < records.length; idx++) {
+                    const record = records[idx];
+                    document.getElementById('loading').innerText = `Memproses Kegiatan ${idx + 1} dari ${records.length}...`;
+
+                    // Find Hierarchy Names
+                    let targetBidang = "", targetSubBidang = "", targetSsName = "";
+                    const bidangKeys = Object.keys(hierarchy);
+                    for (let b = 0; b < bidangKeys.length; b++) {
+                        const bidangName = bidangKeys[b];
+                        const subBidangKeys = Object.keys(hierarchy[bidangName] || {});
+                        for (let sb = 0; sb < subBidangKeys.length; sb++) {
+                            const subName = subBidangKeys[sb];
+                            const subCode = `${b + 1}.${String(sb + 1).padStart(2, '0')}`;
+                            const ssList = hierarchy[bidangName][subName];
+                            for (let ss = 0; ss < ssList.length; ss++) {
+                                const checkCode = `${subCode}.${String(ss + 1).padStart(2, '0')}`;
+                                if (checkCode === record.ss_code) {
+                                    targetBidang = bidangName;
+                                    targetSubBidang = subName;
+                                    targetSsName = ssList[ss];
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    // Fetch Uraian Template for this Sub Sub Bidang
+                    const resRincian = await fetch(`/api/rab/rincian?subSubBidangName=${encodeURIComponent(targetSsName)}`);
+                    const dataRincian = await resRincian.json();
+                    const rincianItems = dataRincian.data || [];
+
+                    // Create map of saved data
+                    let savedMap = {};
+                    if (record.data_json) {
+                        record.data_json.forEach(item => {
+                            savedMap[item.index] = item;
+                        });
+                    }
+
+                    const pageBreakClass = idx < records.length - 1 ? 'page-break' : '';
+                    
+                    html += `
+                        <div class="print-container ${pageBreakClass}">
+                            <div class="header-title">
+                                RENCANA ANGGARAN BIAYA (RAB)<br>
+                                DESA ${namaDesa.toUpperCase()} TAHUN ANGGARAN ${tahun}
+                            </div>
+                            
+                            <table class="info-table">
+                                <tr><td>Bidang</td><td>: ${record.ss_code.split('.')[0]}. ${targetBidang}</td></tr>
+                                <tr><td>Sub Bidang</td><td>: ${record.ss_code.split('.').slice(0,2).join('.')}. ${targetSubBidang}</td></tr>
+                                <tr><td>Kegiatan</td><td>: ${record.ss_code}. ${targetSsName}</td></tr>
+                                ${record.judul_kegiatan ? `<tr><td>Judul Kegiatan</td><td>: ${record.judul_kegiatan}</td></tr>` : ''}
+                            </table>
+
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th rowspan="2" style="width: 30px;">No</th>
+                                        <th rowspan="2">Uraian</th>
+                                        <th colspan="2">Volume 1</th>
+                                        <th colspan="2">Volume 2</th>
+                                        <th rowspan="2" style="width: 100px;">Harga Sat (Rp)</th>
+                                        <th rowspan="2" style="width: 110px;">Total (Rp)</th>
+                                    </tr>
+                                    <tr>
+                                        <th style="width: 40px;">Vol</th>
+                                        <th style="width: 40px;">Sat</th>
+                                        <th style="width: 40px;">Vol</th>
+                                        <th style="width: 40px;">Sat</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+
+                    let noCounter = 1;
+                    
+                    rincianItems.forEach((item, rIdx) => {
+                        if (item.isBold) {
+                            // Bold row
+                            let displayNo = item.uraian.match(/^[a-z]\./i) ? item.uraian.split('.')[0] + '.' : '';
+                            html += `
+                                <tr style="font-weight: bold; background: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                                    <td style="text-align:center;">${displayNo}</td>
+                                    <td colspan="7">${item.uraian}</td>
+                                </tr>
+                            `;
+                            noCounter = 1;
+                        } else {
+                            // Data row
+                            let textUraian = item.uraian;
+                            let displayNo = noCounter++;
+                            
+                            const match = textUraian.match(/^(\d+)\s+(.+)$/);
+                            if (match) {
+                                displayNo = match[1];
+                                textUraian = match[2];
+                            }
+                            
+                            const saved = savedMap[rIdx] || { v1: '', sat1: '', v2: '', sat2: '', price: '', catatan: '' };
+                            
+                            if (saved.catatan && saved.catatan.trim() !== '') {
+                                textUraian += ` <br><span style="font-size:0.9em; font-style:italic;">(${saved.catatan.trim()})</span>`;
+                            }
+                            
+                            const v1 = parseFloat(saved.v1) || 0;
+                            const v2 = saved.v2 === '' ? 1 : (parseFloat(saved.v2) || 0);
+                            const price = parseFloat(saved.price) || 0;
+                            let rowTotal = 0;
+                            if (v1 > 0 && price > 0) {
+                                rowTotal = v1 * v2 * price;
+                            }
+                            
+                            const v1Str = v1 > 0 ? v1 : '';
+                            const v2Str = saved.v2 !== '' ? saved.v2 : '';
+                            const priceStr = price > 0 ? formatRupiah(price) : '';
+                            const totalStr = rowTotal > 0 ? formatRupiah(rowTotal) : '0';
+
+                            html += `
+                                <tr>
+                                    <td style="text-align:center; vertical-align:top;">${displayNo}</td>
+                                    <td style="vertical-align:top;">${textUraian}</td>
+                                    <td style="text-align:center;">${v1Str}</td>
+                                    <td style="text-align:center;">${saved.sat1 || ''}</td>
+                                    <td style="text-align:center;">${v2Str}</td>
+                                    <td style="text-align:center;">${saved.sat2 || ''}</td>
+                                    <td style="text-align:right;">${priceStr}</td>
+                                    <td style="text-align:right;">${totalStr}</td>
+                                </tr>
+                            `;
+                        }
+                    });
+
+                    // Total Row & Footer
+                    html += `
+                                </tbody>
+                                <tfoot>
+                                    <tr style="background: #e0f2fe !important; font-weight: bold; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                                        <td colspan="7" style="text-align: right;">TOTAL KESELURUHAN</td>
+                                        <td style="text-align: right;">Rp. ${formatRupiah(record.grand_total)}</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+
+                            <div class="signature-container">
+                                <div class="signature">
+                                    Mengesahkan,<br>
+                                    Kepala Desa ${namaDesa}<br>
+                                    <div class="signature-name">${kepalaDesa}</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('content').innerHTML = html;
+                
+                // Wait for render then print
+                setTimeout(() => {
+                    window.print();
+                }, 500);
+
+            } catch (err) {
+                console.error(err);
+                document.getElementById('loading').innerHTML = '<span style="color:red">Terjadi kesalahan sistem saat memuat data.</span>';
+            }
+        }
+
+        window.onload = fetchPrintData;
+    </script>
+</body>
+</html>
