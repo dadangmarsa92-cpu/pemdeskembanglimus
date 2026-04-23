@@ -71,6 +71,10 @@ function renderSettingsUI() {
             <label for="set_kepala_desa">Nama Kepala Desa</label>
             <input type="text" id="set_kepala_desa" class="form-input" value="${s.kepala_desa || ''}">
           </div>
+          <div class="form-group">
+            <label for="set_bendahara_desa">Nama Bendahara Desa</label>
+            <input type="text" id="set_bendahara_desa" class="form-input" value="${s.bendahara_desa || ''}">
+          </div>
           <div class="form-group" style="grid-column: span 2;">
             <label for="set_alamat_desa">Alamat Desa</label>
             <input type="text" id="set_alamat_desa" class="form-input" value="${s.alamat_desa || ''}">
@@ -266,6 +270,7 @@ async function saveSettings() {
     nama_kecamatan: 'set_nama_kecamatan',
     nama_kabupaten: 'set_nama_kabupaten',
     kepala_desa: 'set_kepala_desa',
+    bendahara_desa: 'set_bendahara_desa',
     alamat_desa: 'set_alamat_desa',
     kode_pos_desa: 'set_kode_pos_desa',
     telp_desa: 'set_telp_desa',
@@ -318,6 +323,7 @@ async function resetSettings() {
     nama_kecamatan: 'Borobudur',
     nama_kabupaten: 'Magelang',
     kepala_desa: 'SOETJI ARIMBI',
+    bendahara_desa: '',
     alamat_desa: 'Jl. Sudirman KM. 03, Kembanglimus',
     kode_pos_desa: '56553',
     telp_desa: '(0293) 7182286',

@@ -389,7 +389,7 @@ app.get('/api/rab/saved-all', (req, res) => {
   }
 });
 
-// Search RAB Records by year + keyword (ss_name or judul_kegiatan)
+// Search RAB Records by year + keyword (searches both Excel hierarchy and DB records)
 app.get('/api/rab/search', (req, res) => {
   if (!req.session.userId) return res.status(401).json({ success: false, message: 'Belum login.' });
 
@@ -399,33 +399,235 @@ app.get('/api/rab/search', (req, res) => {
   }
 
   try {
-    let stmt;
-    const keyword = q ? `%${q}%` : '%';
-    stmt = db.prepare(`
-      SELECT ss_code, ss_name, judul_kegiatan, grand_total
-      FROM rab_records
-      WHERE tahun = ?
-        AND (ss_name LIKE ? OR judul_kegiatan LIKE ?)
-      ORDER BY ss_code ASC
-    `);
-    stmt.bind([tahun, keyword, keyword]);
+    const qLower = q ? q.toLowerCase().trim() : '';
+    
+    // 1. Load Excel Data to get full list of Sub-Sub Bidang
+    const bidangPath = path.join(__dirname, 'templates', 'daftar_bidang.xlsx');
+    const hierarchyPath = path.join(__dirname, 'templates', 'daftar_sub__sub_bidang.xlsx');
 
-    const results = [];
+    let bidangMap = {}; // nama -> kode
+    if (fs.existsSync(bidangPath)) {
+      const wb = XLSX.readFile(bidangPath);
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 });
+      rows.forEach((r, idx) => {
+        if (r[1]) {
+          const code = r[0] ? String(r[0]).padStart(2, '0') : String(idx + 1).padStart(2, '0');
+          bidangMap[r[1]] = code;
+        }
+      });
+    }
+
+    let allSubSub = [];
+    if (fs.existsSync(hierarchyPath)) {
+      const wb = XLSX.readFile(hierarchyPath);
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 });
+
+      if (rows.length >= 2) {
+        const bidangHeaders = rows[0];
+        const subBidangHeaders = rows[1];
+        let subBidangCounter = {}; // Tracking sub-bidang order per bidang
+
+        bidangHeaders.forEach((bidangName, colIndex) => {
+          if (!bidangName || !subBidangHeaders[colIndex]) return;
+
+          const subName = subBidangHeaders[colIndex];
+          if (!subBidangCounter[bidangName]) subBidangCounter[bidangName] = new Set();
+          subBidangCounter[bidangName].add(subName);
+          
+          const bCode = bidangMap[bidangName] || '??';
+          const sbCode = String(Array.from(subBidangCounter[bidangName]).indexOf(subName) + 1).padStart(2, '0');
+          const baseCode = `${bCode}.${sbCode}`;
+
+          for (let i = 2; i < rows.length; i++) {
+            const ssName = rows[i][colIndex];
+            if (ssName) {
+              const ssCode = `${baseCode}.${String(i - 1).padStart(2, '0')}`;
+              allSubSub.push({
+                ss_code: ssCode,
+                ss_name: String(ssName),
+                bidang: bidangName,
+                sub_bidang: subName
+              });
+            }
+          }
+        });
+      }
+    }
+
+    // 2. Fetch saved data from DB for this year
+    const stmt = db.prepare('SELECT ss_code, ss_name, judul_kegiatan, grand_total FROM rab_records WHERE tahun = ?');
+    stmt.bind([tahun]);
+    let dbMap = {};
     while (stmt.step()) {
       const row = stmt.getAsObject();
-      results.push({
-        ss_code: row.ss_code,
-        ss_name: row.ss_name,
-        judul_kegiatan: row.judul_kegiatan || '',
-        grand_total: row.grand_total
+      dbMap[row.ss_code] = row;
+    }
+    stmt.free();
+
+    // 3. Combine and Filter
+    let results = allSubSub.map(item => {
+      const dbItem = dbMap[item.ss_code];
+      return {
+        ...item,
+        judul_kegiatan: dbItem ? (dbItem.judul_kegiatan || '') : '',
+        grand_total: dbItem ? dbItem.grand_total : 0
+      };
+    });
+
+    if (qLower) {
+      results = results.filter(r => 
+        r.ss_name.toLowerCase().includes(qLower) || 
+        r.judul_kegiatan.toLowerCase().includes(qLower) ||
+        r.ss_code.includes(qLower) ||
+        r.bidang.toLowerCase().includes(qLower) ||
+        r.sub_bidang.toLowerCase().includes(qLower)
+      );
+    }
+
+    res.json({ success: true, data: results });
+  } catch (err) {
+    console.error('Error searching RAB:', err);
+    res.status(500).json({ success: false, message: 'Gagal melakukan pencarian.' });
+  }
+});
+
+// Search in RAB Details (Rincian) - searches inside rincian_kegiatan.xlsx and saved records' JSON
+app.get('/api/rab/search-rincian', async (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ success: false, message: 'Belum login.' });
+
+  const { tahun, q } = req.query;
+  if (!tahun) return res.status(400).json({ success: false, message: 'Parameter tahun diperlukan.' });
+  const qLower = q ? q.toLowerCase().trim() : '';
+  if (!qLower) return res.json({ success: true, data: [] });
+
+  try {
+    const rincianPath = path.join(__dirname, 'templates', 'rincian_kegiatan.xlsx');
+    const bidangPath = path.join(__dirname, 'templates', 'daftar_bidang.xlsx');
+    const hierarchyPath = path.join(__dirname, 'templates', 'daftar_sub__sub_bidang.xlsx');
+
+    let results = [];
+    let matchMap = {}; // ss_name -> { items: Set }
+
+    // 1. Search in Excel Template
+    if (fs.existsSync(rincianPath)) {
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.readFile(rincianPath);
+      const sheet = workbook.worksheets[0];
+
+      sheet.columns.forEach((col) => {
+        const headerCell = col.values[1];
+        let ssName = '';
+        if (headerCell) {
+          ssName = typeof headerCell === 'object' && headerCell.richText 
+            ? headerCell.richText.map(rt => rt.text).join('') 
+            : String(headerCell);
+          ssName = ssName.trim();
+        }
+        if (!ssName) return;
+
+        // Cek kecocokan di nama kegiatan (header)
+        if (ssName.toLowerCase().includes(qLower)) {
+          if (!matchMap[ssName]) matchMap[ssName] = new Set();
+          matchMap[ssName].add('📌 [Cocok pada Nama Kegiatan]');
+        }
+
+        col.values.forEach((val, rowIdx) => {
+          if (rowIdx <= 1 || !val) return;
+          let text = typeof val === 'object' && val.richText 
+            ? val.richText.map(rt => rt.text).join('') 
+            : String(val);
+          
+          if (text.toLowerCase().includes(qLower)) {
+            if (!matchMap[ssName]) matchMap[ssName] = new Set();
+            matchMap[ssName].add(text.trim());
+          }
+        });
+      });
+    }
+
+    // 2. Search in Saved DB Records (including custom notes/titles)
+    const stmt = db.prepare('SELECT ss_name, ss_code, judul_kegiatan, data_json FROM rab_records WHERE tahun = ?');
+    stmt.bind([tahun]);
+    while (stmt.step()) {
+      const row = stmt.getAsObject();
+      const items = JSON.parse(row.data_json);
+      let ssName = row.ss_name;
+      
+      // Cek kecocokan di nama kegiatan (header) - jaga-jaga kalau ada yg hanya di DB
+      if (ssName.toLowerCase().includes(qLower)) {
+        if (!matchMap[ssName]) matchMap[ssName] = new Set();
+        matchMap[ssName].add('📌 [Cocok pada Nama Kegiatan]');
+      }
+
+      // Search in judul_kegiatan
+      if (row.judul_kegiatan && row.judul_kegiatan.toLowerCase().includes(qLower)) {
+        if (!matchMap[ssName]) matchMap[ssName] = new Set();
+        matchMap[ssName].add(`[Judul Tambahan] ${row.judul_kegiatan}`);
+      }
+
+      // Search in rincian items
+      items.forEach(item => {
+        // Search in uraian
+        if (item.uraian && item.uraian.toLowerCase().includes(qLower)) {
+            if (!matchMap[ssName]) matchMap[ssName] = new Set();
+            matchMap[ssName].add(item.uraian.trim());
+        }
+        // Search in catatan
+        if (item.catatan && item.catatan.toLowerCase().includes(qLower)) {
+          if (!matchMap[ssName]) matchMap[ssName] = new Set();
+          matchMap[ssName].add(`[Catatan] ${item.catatan.trim()}`);
+        }
       });
     }
     stmt.free();
 
-    res.json({ success: true, data: results, total: results.length });
+
+    // 3. Get codes for these names to allow navigation
+    let nameToCode = {};
+    if (fs.existsSync(bidangPath) && fs.existsSync(hierarchyPath)) {
+        // Build the same mapping as search-rab
+        const wbB = XLSX.readFile(bidangPath);
+        const rowsB = XLSX.utils.sheet_to_json(wbB.Sheets[wbB.SheetNames[0]], { header: 1 });
+        let bMap = {};
+        rowsB.forEach((r, i) => { if(r[1]) bMap[r[1]] = r[0] ? String(r[0]).padStart(2, '0') : String(i+1).padStart(2, '0'); });
+
+        const wbH = XLSX.readFile(hierarchyPath);
+        const rowsH = XLSX.utils.sheet_to_json(wbH.Sheets[wbH.SheetNames[0]], { header: 1 });
+        if (rowsH.length >= 2) {
+            const bh = rowsH[0]; const sbh = rowsH[1];
+            let sbCount = {};
+            bh.forEach((bn, colIdx) => {
+                if(!bn || !sbh[colIdx]) return;
+                if(!sbCount[bn]) sbCount[bn] = new Set();
+                sbCount[bn].add(sbh[colIdx]);
+                const bc = bMap[bn] || '??';
+                const sbc = String(Array.from(sbCount[bn]).indexOf(sbh[colIdx]) + 1).padStart(2, '0');
+                for(let i=2; i<rowsH.length; i++) {
+                    if(rowsH[i][colIdx]) {
+                        const code = `${bc}.${sbc}.${String(i-1).padStart(2, '0')}`;
+                        nameToCode[rowsH[i][colIdx]] = { code, bidang: bn, sub_bidang: sbh[colIdx] };
+                    }
+                }
+            });
+        }
+    }
+
+    // 4. Format results
+    results = Object.keys(matchMap).map(name => {
+      const mapping = nameToCode[name] || { code: '??', bidang: '??', sub_bidang: '??' };
+      return {
+        ss_name: name,
+        ss_code: mapping.code,
+        bidang: mapping.bidang,
+        sub_bidang: mapping.sub_bidang,
+        matching_items: Array.from(matchMap[name])
+      };
+    });
+
+    res.json({ success: true, data: results });
   } catch (err) {
-    console.error('Error searching RAB:', err);
-    res.status(500).json({ success: false, message: 'Gagal melakukan pencarian.' });
+    console.error('Error searching RAB details:', err);
+    res.status(500).json({ success: false, message: 'Gagal melakukan pencarian rincian.' });
   }
 });
 
@@ -1295,6 +1497,154 @@ app.delete('/api/surat-ahli-waris/:id', (req, res) => {
     res.json({ success: true, message: 'Surat Ahli Waris berhasil dihapus.' });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Gagal menghapus data.', error: err.message });
+  }
+});
+
+// ── CETAK DAFTAR HADIR PESERTA ──
+app.post('/api/cetak/daftar-hadir-peserta', (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ success: false, message: 'Belum login.' });
+
+  try {
+    const { hari_tanggal_pelaksanaan, judul_kegiatan, nama_pelaksana_kegiatan, jumlah_baris } = req.body;
+    
+    // Susun array peserta untuk loop baris kosong
+    const baris = parseInt(jumlah_baris) || 10;
+    const peserta = [];
+    for (let i = 1; i <= baris; i++) {
+      // Logika zig-zag: ganjil di kiri, genap agak di kanan
+      const ttd = i % 2 !== 0 ? `${i}.` : `\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0${i}.`;
+      peserta.push({
+        no: i,
+        nama: '',
+        jabatan: '',
+        alamat: '',
+        tanda_tangan: ttd
+      });
+    }
+
+    const templatePath = path.join(__dirname, 'templates', 'daftar_hadir_template.docx');
+    if (!fs.existsSync(templatePath)) {
+      return res.status(404).json({ success: false, message: 'Template daftar_hadir_template.docx tidak ditemukan.' });
+    }
+
+    const content = fs.readFileSync(templatePath, 'binary');
+    const zip = new PizZip(content);
+    
+    const doc = new Docxtemplater(zip, { 
+        paragraphLoop: true, 
+        linebreaks: true 
+    });
+
+    doc.render({
+      hari_tanggal_pelaksanaan: hari_tanggal_pelaksanaan || '-',
+      judul_kegiatan: judul_kegiatan || '-',
+      nama_pelaksana_kegiatan: nama_pelaksana_kegiatan || '-',
+      peserta: peserta
+    });
+
+    const buf = doc.getZip().generate({ type: 'nodebuffer', compression: 'DEFLATE' });
+    const fileName = `Daftar_Hadir_Peserta_${Date.now()}.docx`;
+    const outputDir = path.join(__dirname, 'public', 'arsip');
+    
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+    
+    const outputPath = path.join(outputDir, fileName);
+    fs.writeFileSync(outputPath, buf);
+    
+    res.json({ success: true, downloadUrl: `/arsip/${fileName}` });
+  } catch (err) {
+    console.error('Error cetak daftar hadir peserta:', err);
+    res.status(500).json({ success: false, message: 'Gagal membuat dokumen daftar hadir.', error: err.message });
+  }
+});
+
+// ── CETAK DAFTAR PENERIMAAN ──
+app.post('/api/cetak/daftar-penerimaan', (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ success: false, message: 'Belum login.' });
+
+  try {
+    const { pelaksana_kegiatan, nominal, jumlah_baris } = req.body;
+    
+    // Ambil setting dari database untuk bendahara_desa
+    const settings = getSettings();
+    const bendahara_desa = settings.bendahara_desa || '';
+
+    // Perhitungan
+    const numNominal = parseFloat(nominal) || 0;
+    const numPph21 = Math.round(numNominal * 0.05); // 5%
+    const numBersih = numNominal - numPph21;
+
+    // Helper format rupiah
+    const formatRp = (angka) => {
+        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
+    };
+
+    const strPenerimaan = numNominal > 0 ? formatRp(numNominal) : '';
+    const strPph21 = numPph21 > 0 ? formatRp(numPph21) : '';
+    const strBersih = numBersih > 0 ? formatRp(numBersih) : '';
+
+    // Susun array penerima
+    const baris = parseInt(jumlah_baris) || 10;
+    const penerima = [];
+    for (let i = 1; i <= baris; i++) {
+      const ttd = i % 2 !== 0 ? `${i}.` : `\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0${i}.`;
+      penerima.push({
+        no: i,
+        nik: '',
+        nama: '',
+        jabatan: '',
+        penerimaan: strPenerimaan,
+        pph21: strPph21,
+        bersih: strBersih,
+        tanda_tangan: ttd
+      });
+    }
+
+    const numTotalPenerimaan = numNominal * baris;
+    const numTotalPph21 = numPph21 * baris;
+    const numTotalBersih = numBersih * baris;
+
+    const templatePath = path.join(__dirname, 'templates', 'daftar_penerimaan_template.docx');
+    if (!fs.existsSync(templatePath)) {
+      return res.status(404).json({ success: false, message: 'Template daftar_penerimaan_template.docx tidak ditemukan.' });
+    }
+
+    const content = fs.readFileSync(templatePath, 'binary');
+    const zip = new PizZip(content);
+    
+    const doc = new Docxtemplater(zip, { 
+        paragraphLoop: true, 
+        linebreaks: true 
+    });
+
+    doc.render({
+      hari_tanggal_pelaksanaan: req.body.hari_tanggal_pelaksanaan || '-',
+      judul_kegiatan: req.body.judul_kegiatan || '-',
+      bendahara_desa: bendahara_desa || '-',
+      pelaksana_kegiatan: pelaksana_kegiatan || '-',
+      total_penerimaan: numTotalPenerimaan > 0 ? formatRp(numTotalPenerimaan) : '',
+      tiotal_pph21: numTotalPph21 > 0 ? formatRp(numTotalPph21) : '',
+      total_penerimaan_bersih: numTotalBersih > 0 ? formatRp(numTotalBersih) : '',
+      penerima: penerima
+    });
+
+    const buf = doc.getZip().generate({ type: 'nodebuffer', compression: 'DEFLATE' });
+    const fileName = `Daftar_Penerimaan_${Date.now()}.docx`;
+    const outputDir = path.join(__dirname, 'public', 'arsip');
+    
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+    
+    const outputPath = path.join(outputDir, fileName);
+    fs.writeFileSync(outputPath, buf);
+    
+    res.json({ success: true, downloadUrl: `/arsip/${fileName}` });
+  } catch (err) {
+    console.error('Error cetak daftar penerimaan:', err);
+    res.status(500).json({ success: false, message: 'Gagal membuat dokumen daftar penerimaan.', error: err.message });
   }
 });
 

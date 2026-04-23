@@ -78,6 +78,20 @@
               <span>RAB</span>
             </a>
           </li>
+
+          <li>
+            <a href="#" class="sidebar-link" data-page="daftar-hadir">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                <path d="M9 14h6"></path>
+                <path d="M9 18h6"></path>
+                <path d="M9 10h.01"></path>
+              </svg>
+              <span>Daftar Hadir</span>
+            </a>
+          </li>
+
           <li class="sidebar-dropdown">
             <a href="#" class="sidebar-link sidebar-dropdown-toggle" id="suratDropdownToggle">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -284,9 +298,9 @@
                     <div class="input-wrapper">
                       <select id="sppdKendaraan" class="form-input" required style="padding-left:16px;">
                         <option value="" disabled selected>Pilih Kendaraan...</option>
-                        <option value="Sepeda Motor">Sepeda Motor</option>
-                        <option value="Mobil">Mobil</option>
-                        <option value="Bis">Bis</option>
+                        <option value="sepeda motor">sepeda motor</option>
+                        <option value="mobil">mobil</option>
+                        <option value="bis">bis</option>
                       </select>
                     </div>
                   </div>
@@ -502,8 +516,12 @@
                 <input type="text" id="rabSearchInput" placeholder="Cari nama / judul kegiatan..." style="border:none; outline:none; font-size:0.88rem; width:220px; color:var(--text-dark); background:transparent;" onkeydown="if(event.key==='Enter') searchRab()">
               </div>
               <button class="btn-save" style="background:#0ea5e9; display:flex; align-items:center; gap:6px; padding:6px 14px; font-size:0.85rem;" onclick="searchRab()">
-                🔍 Cari
+                🔍 Judul
               </button>
+              <button class="btn-save" style="background:#16a34a; display:flex; align-items:center; gap:6px; padding:6px 14px; font-size:0.85rem;" onclick="searchRabTerisi()">
+                💰 Cari Anggaran Terisi
+              </button>
+
               <!-- Tahun + Cetak -->
               <div style="display: flex; align-items: center; gap: 12px; background: white; padding: 8px 16px; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: var(--shadow-sm);">
                 <label for="rabTahunSelector" style="font-weight: 600; color: var(--text-dark); margin: 0;">Tahun Anggaran:</label>
@@ -1095,6 +1113,104 @@
           </div>
         </div>
 
+        <!-- ═══════════════ PAGE: DAFTAR HADIR ═══════════════ -->
+        <div class="page-section" id="page-daftar-hadir">
+          <div class="page-header-section">
+            <div>
+              <h1>📋 Daftar Hadir & Penerimaan</h1>
+              <p>Kelola pencatatan daftar hadir peserta, daftar penerimaan, dan penerimaan narasumber</p>
+            </div>
+          </div>
+          
+          <div class="settings-tabs" id="daftarHadirTabs">
+            <button class="tab-btn active" data-tab="peserta">👥 Daftar Hadir Peserta</button>
+            <button class="tab-btn" data-tab="penerimaan">🧾 Daftar Penerimaan</button>
+          </div>
+
+          <div class="card" style="margin-top: 24px; min-height: 400px; padding: 30px;">
+            <div id="dh-peserta" class="dh-tab-content">
+              <h2 style="font-size: 1.2rem; color: var(--text-dark); margin-bottom: 20px;">Daftar Hadir Peserta</h2>
+              
+              <div class="form-container" style="max-width: 600px;">
+                <div class="form-group">
+                  <label class="form-label" for="dhHariTanggal">Hari / Tanggal Pelaksanaan</label>
+                  <input type="text" id="dhHariTanggal" class="form-input" placeholder="Contoh: Senin, 24 April 2026">
+                </div>
+                
+                <div class="form-group">
+                  <label class="form-label" for="dhJudulKegiatan">Judul Kegiatan</label>
+                  <input type="text" id="dhJudulKegiatan" class="form-input" placeholder="Contoh: Sosialisasi Kesehatan Desa">
+                </div>
+                
+                <div class="form-group">
+                  <label class="form-label" for="dhNamaPelaksana">Nama Pelaksana Kegiatan</label>
+                  <input type="text" id="dhNamaPelaksana" class="form-input" placeholder="Contoh: SOETJI ARIMBI">
+                </div>
+                
+                <div class="form-group">
+                  <label class="form-label" for="dhJumlahBaris">Jumlah Baris Kosong (Untuk Peserta)</label>
+                  <input type="number" id="dhJumlahBaris" class="form-input" value="10" min="1" max="100">
+                  <small style="color: var(--text-muted); display: block; margin-top: 4px;">Tentukan berapa banyak baris kosong yang ingin dicetak pada tabel daftar hadir.</small>
+                </div>
+                
+                <div class="form-actions" style="margin-top: 24px;">
+                  <button type="button" class="btn-save" onclick="cetakDaftarHadirPeserta()" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 8px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                      <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1-2 2h-2"></path>
+                      <rect x="6" y="14" width="12" height="8"></rect>
+                    </svg>
+                    Cetak Daftar Hadir
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <div id="dh-penerimaan" class="dh-tab-content" style="display: none;">
+              <h2 style="font-size: 1.2rem; color: var(--text-dark); margin-bottom: 20px;">Daftar Penerimaan</h2>
+              
+              <div class="form-container" style="max-width: 600px;">
+                <div class="form-group">
+                  <label class="form-label" for="dpHariTanggal">Hari / Tanggal Pelaksanaan</label>
+                  <input type="text" id="dpHariTanggal" class="form-input" placeholder="Contoh: Senin, 24 April 2026">
+                </div>
+                
+                <div class="form-group">
+                  <label class="form-label" for="dpJudulKegiatan">Judul Kegiatan</label>
+                  <input type="text" id="dpJudulKegiatan" class="form-input" placeholder="Contoh: Sosialisasi Kesehatan Desa">
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="dpPelaksana">Pelaksana Kegiatan</label>
+                  <input type="text" id="dpPelaksana" class="form-input" placeholder="Contoh: SOETJI ARIMBI">
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="dpNominal">Nominal Penerimaan (Rp)</label>
+                  <input type="number" id="dpNominal" class="form-input" placeholder="Contoh: 100000">
+                  <small style="color: var(--text-muted); display: block; margin-top: 4px;">PPh 21 (5%) dan Penerimaan Bersih akan dihitung otomatis.</small>
+                </div>
+                
+                <div class="form-group">
+                  <label class="form-label" for="dpJumlahBaris">Jumlah Baris Kosong</label>
+                  <input type="number" id="dpJumlahBaris" class="form-input" value="10" min="1" max="100">
+                </div>
+                
+                <div class="form-actions" style="margin-top: 24px;">
+                  <button type="button" class="btn-save" onclick="cetakDaftarPenerimaan()" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 8px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                      <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1-2 2h-2"></path>
+                      <rect x="6" y="14" width="12" height="8"></rect>
+                    </svg>
+                    Cetak Daftar Penerimaan
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- ═══════════════ PAGE: PENGATURAN ═══════════════ -->
         <div class="page-section" id="page-pengaturan">
           <div class="page-header-section">
@@ -1128,12 +1244,14 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://npmcdn.com/flatpickr/dist/l10n/id.js"></script>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <script src="js/dashboard.js"></script>
   <script src="js/sppd.js"></script>
   <script src="js/narasumber.js"></script>
   <script src="js/rab.js"></script>
   <script src="js/surat-ahli-waris.js"></script>
+  <script src="js/daftar-hadir.js"></script>
   <script src="js/settings.js"></script>
 </body>
 </html>

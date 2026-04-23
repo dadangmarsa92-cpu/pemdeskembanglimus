@@ -91,15 +91,28 @@
                     const record = records[idx];
                     document.getElementById('loading').innerText = `Memproses Kegiatan ${idx + 1} dari ${records.length}...`;
 
-                    // Find Hierarchy Names
-                    let targetBidang = "", targetSubBidang = "", targetSsName = "";
+                    // Find Hierarchy Names based on ss_code
+                    let targetBidang = "", targetSubBidang = "", targetSsName = record.ss_name;
+                    
+                    // Buat mapping bidang untuk kode yang benar (misal '01')
+                    let bidangMap = {};
+                    if (dataRab.bidang) {
+                        dataRab.bidang.forEach((b, idx) => {
+                            bidangMap[b.nama_bidang] = b.no ? String(b.no).padStart(2, '0') : String(idx + 1).padStart(2, '0');
+                        });
+                    }
+
+                    let found = false;
                     const bidangKeys = Object.keys(hierarchy);
                     for (let b = 0; b < bidangKeys.length; b++) {
                         const bidangName = bidangKeys[b];
+                        const bCode = bidangMap[bidangName] || '??';
+                        
                         const subBidangKeys = Object.keys(hierarchy[bidangName] || {});
                         for (let sb = 0; sb < subBidangKeys.length; sb++) {
                             const subName = subBidangKeys[sb];
-                            const subCode = `${b + 1}.${String(sb + 1).padStart(2, '0')}`;
+                            const subCode = `${bCode}.${String(sb + 1).padStart(2, '0')}`;
+                            
                             const ssList = hierarchy[bidangName][subName];
                             for (let ss = 0; ss < ssList.length; ss++) {
                                 const checkCode = `${subCode}.${String(ss + 1).padStart(2, '0')}`;
@@ -107,10 +120,13 @@
                                     targetBidang = bidangName;
                                     targetSubBidang = subName;
                                     targetSsName = ssList[ss];
+                                    found = true;
                                     break;
                                 }
                             }
+                            if (found) break;
                         }
+                        if (found) break;
                     }
 
                     // Fetch Uraian Template for this Sub Sub Bidang

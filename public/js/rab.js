@@ -441,9 +441,26 @@ if (rabTahunEl) {
 }
 
 window.cetakRabSemua = function() {
-    const tahun = document.getElementById('rabTahunSelector').value;
-    if (!tahun) return alert("Pilih tahun terlebih dahulu");
-    window.open(`print-rab.html?tahun=${tahun}`, '_blank');
+    try {
+        const tahun = document.getElementById('rabTahunSelector').value;
+        if (!tahun) {
+            alert("Pilih tahun terlebih dahulu");
+            return;
+        }
+        
+        console.log("Mencoba membuka print-rab.html untuk tahun:", tahun);
+        const url = `print-rab.html?tahun=${tahun}`;
+        const printWindow = window.open(url, '_blank');
+        
+        // Fallback jika popup blocker aktif
+        if (!printWindow || printWindow.closed || typeof printWindow.closed === 'undefined') {
+            console.warn("Pop-up diblokir. Mengalihkan langsung ke halaman cetak...");
+            window.location.href = url;
+        }
+    } catch (err) {
+        console.error("Error pada cetakRabSemua:", err);
+        alert("Terjadi kesalahan: " + err.message);
+    }
 }
 
 window.cetakRabKegiatanIni = function() {
@@ -685,28 +702,38 @@ window.searchRab = async function() {
         data.data.forEach((item, i) => {
             const total = item.grand_total ? parseInt(item.grand_total).toLocaleString('id-ID') : '0';
             const judulHtml = item.judul_kegiatan
-                ? `<span style="color:#0ea5e9;">${item.judul_kegiatan}</span>`
-                : `<span style="color:#cbd5e1; font-style:italic;">–</span>`;
+                ? `<div style="font-size:0.8rem; color:#0ea5e9; font-weight:600; margin-top:4px;">📌 ${item.judul_kegiatan}</div>`
+                : '';
             const rowBg = i % 2 === 0 ? '#fff' : '#f8fafc';
 
-            // Highlight keyword in ss_name
+            // Highlight keyword in ss_name, bidang, sub_bidang
             let ssNameHtml = item.ss_name;
+            let bidangHtml = item.bidang;
+            let subBidangHtml = item.sub_bidang;
             if (q) {
                 const regex = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-                ssNameHtml = ssNameHtml.replace(regex, '<mark style="background:#fef08a; border-radius:2px;">$1</mark>');
+                const highlight = '<mark style="background:#fef08a; border-radius:2px; padding:0 2px;">$1</mark>';
+                ssNameHtml = ssNameHtml.replace(regex, highlight);
+                bidangHtml = bidangHtml.replace(regex, highlight);
+                subBidangHtml = subBidangHtml.replace(regex, highlight);
             }
 
             html += `
-                <tr style="background:${rowBg}; border-bottom:1px solid #f1f5f9;">
-                    <td style="padding:10px 12px; font-weight:600; color:#64748b; font-size:0.8rem;">${item.ss_code}</td>
-                    <td style="padding:10px 12px;">${ssNameHtml}</td>
-                    <td style="padding:10px 12px;">${judulHtml}</td>
-                    <td style="padding:10px 12px; text-align:right; font-weight:600; color:${item.grand_total > 0 ? 'var(--success)' : 'var(--text-muted)'};">
+                <tr style="background:${rowBg}; border-bottom:1px solid #f1f5f9; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='${rowBg}'">
+                    <td style="padding:12px; font-weight:700; color:var(--primary); font-size:0.8rem; vertical-align:top;">${item.ss_code}</td>
+                    <td style="padding:12px; vertical-align:top;">
+                        <div style="font-size:0.7rem; text-transform:uppercase; color:var(--text-muted); margin-bottom:4px; font-weight:600;">
+                            ${bidangHtml} <span style="margin:0 4px; opacity:0.5;">/</span> ${subBidangHtml}
+                        </div>
+                        <div style="font-weight:600; color:var(--text-dark); line-height:1.4;">${ssNameHtml}</div>
+                        ${judulHtml}
+                    </td>
+                    <td style="padding:12px; text-align:right; font-weight:700; color:${item.grand_total > 0 ? 'var(--success)' : 'var(--text-muted)'}; vertical-align:top;">
                         ${item.grand_total > 0 ? 'Rp ' + total : '–'}
                     </td>
-                    <td style="padding:10px 12px; text-align:center;">
-                        <button onclick="bukaRabDariSearch('${item.ss_code}', '${item.ss_name.replace(/'/g, "\\'")}'); document.getElementById('rabSearchModal').style.display='none';"
-                            style="background:#0f172a; color:white; border:none; border-radius:6px; padding:5px 10px; cursor:pointer; font-size:0.8rem;">
+                    <td style="padding:12px; text-align:center; vertical-align:top;">
+                        <button onclick="bukaRabDariSearch('${item.ss_code}', '${item.ss_name.replace(/'/g, "\\'")}');"
+                            style="background:var(--primary); color:white; border:none; border-radius:8px; padding:8px 16px; cursor:pointer; font-size:0.85rem; font-weight:600; box-shadow: 0 4px 12px rgba(37,99,235,0.2); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
                             Buka
                         </button>
                     </td>
@@ -723,24 +750,148 @@ window.searchRab = async function() {
     }
 };
 
-// Buka modal rincian dari hasil pencarian, dengan navigasi ke Bidang/Sub Bidang yang tepat
+// ── RAB Anggaran Terisi ──
+window.searchRabTerisi = async function() {
+    const tahun = document.getElementById('rabTahunSelector').value;
+    const modal = document.getElementById('rabSearchModal');
+    const resultsDiv = document.getElementById('rabSearchResults');
+    const titleEl = document.getElementById('rabSearchModalTitle');
+
+    titleEl.innerText = `💰 Daftar Anggaran Terisi RAB – Tahun ${tahun}`;
+    resultsDiv.innerHTML = '<div style="text-align:center; padding:30px; color:var(--text-muted);">Mencari kegiatan yang sudah dianggarkan...</div>';
+    modal.style.display = 'flex';
+
+    try {
+        const url = `/api/rab/search?tahun=${tahun}`; // Tanpa parameter q, akan mengembalikan semua data
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (!data.success) {
+            resultsDiv.innerHTML = `<div style="text-align:center; padding:30px; color:red;">${data.message}</div>`;
+            return;
+        }
+
+        // Hanya ambil yang sudah terisi nominal
+        const terisi = data.data.filter(item => item.grand_total > 0);
+
+        if (terisi.length === 0) {
+            resultsDiv.innerHTML = `
+                <div style="text-align:center; padding:40px; color:var(--text-muted);">
+                    <div style="font-size:2.5rem; margin-bottom:12px;">💰</div>
+                    <p>Belum ada rincian kegiatan yang diisi anggarannya untuk tahun ${tahun}.</p>
+                </div>`;
+            return;
+        }
+
+        let html = `
+            <p style="margin: 0 0 16px; font-size:0.85rem; color:var(--text-muted);">
+                Ditemukan <strong>${terisi.length}</strong> kegiatan yang sudah memiliki anggaran.
+            </p>
+            <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
+                <thead>
+                    <tr style="background:#f0fdf4;">
+                        <th style="padding:12px; text-align:left; border-bottom:2px solid #bbf7d0; width:90px;">Kode</th>
+                        <th style="padding:12px; text-align:left; border-bottom:2px solid #bbf7d0;">Kegiatan Terisi</th>
+                        <th style="padding:12px; text-align:right; border-bottom:2px solid #bbf7d0;">Total Anggaran</th>
+                        <th style="padding:12px; text-align:center; border-bottom:2px solid #bbf7d0; width:80px;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        let totalKeseluruhan = 0;
+
+        terisi.forEach((item, i) => {
+            const rowBg = i % 2 === 0 ? '#fff' : '#f8fafc';
+            totalKeseluruhan += item.grand_total;
+            const total = parseInt(item.grand_total).toLocaleString('id-ID');
+            
+            const judulHtml = item.judul_kegiatan
+                ? `<div style="font-size:0.8rem; color:#16a34a; font-weight:600; margin-top:4px;">📌 ${item.judul_kegiatan}</div>`
+                : '';
+
+            html += `
+                <tr style="background:${rowBg}; border-bottom:1px solid #f1f5f9; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='${rowBg}'">
+                    <td style="padding:12px; font-weight:700; color:#16a34a; font-size:0.8rem; vertical-align:top;">${item.ss_code}</td>
+                    <td style="padding:12px; vertical-align:top;">
+                        <div style="font-size:0.7rem; text-transform:uppercase; color:var(--text-muted); margin-bottom:4px; font-weight:600;">
+                            ${item.bidang} <span style="margin:0 4px; opacity:0.5;">/</span> ${item.sub_bidang}
+                        </div>
+                        <div style="font-weight:600; color:var(--text-dark); line-height:1.4;">${item.ss_name}</div>
+                        ${judulHtml}
+                    </td>
+                    <td style="padding:12px; text-align:right; font-weight:700; color:#16a34a; vertical-align:top;">
+                        Rp ${total}
+                    </td>
+                    <td style="padding:12px; text-align:center; vertical-align:top;">
+                        <button onclick="bukaRabDariSearch('${item.ss_code}', '${item.ss_name.replace(/'/g, "\\'")}');"
+                            style="background:#16a34a; color:white; border:none; border-radius:8px; padding:8px 16px; cursor:pointer; font-size:0.85rem; font-weight:600; box-shadow: 0 4px 12px rgba(22,163,74,0.2); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                            Buka
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        html += `
+                <tr style="background:#e6f4ea; border-top:2px solid #16a34a;">
+                    <td colspan="2" style="padding:12px; font-weight:700; color:#065f46; text-align:right;">TOTAL KESELURUHAN</td>
+                    <td style="padding:12px; text-align:right; font-weight:800; color:#065f46; font-size:1rem;">
+                        Rp ${totalKeseluruhan.toLocaleString('id-ID')}
+                    </td>
+                    <td></td>
+                </tr>
+        `;
+
+        html += `</tbody></table>`;
+        resultsDiv.innerHTML = html;
+
+    } catch (err) {
+        console.error(err);
+        resultsDiv.innerHTML = `<div style="text-align:center; padding:30px; color:red;">Gagal memproses data anggaran terisi.</div>`;
+    }
+};
+
+// Buka rincian dari hasil pencarian, dengan navigasi ke Bidang/Sub Bidang yang tepat
 window.bukaRabDariSearch = function(ssCode, ssName) {
-    // Coba navigasi ke posisi hierarchy dulu, lalu buka modal
-    if (rabHierarchy && Object.keys(rabHierarchy).length > 0) {
-        const parts = ssCode.split('.');
-        const bidangIdx = parseInt(parts[0]) - 1;
-        const subBidangIdx = parseInt(parts[1]) - 1;
+    // Sembunyikan modal pencarian
+    const modal = document.getElementById('rabSearchModal');
+    if (modal) modal.style.display = 'none';
 
-        // Click bidang
+    // Coba navigasi ke posisi hierarchy dulu
+    const parts = ssCode.split('.');
+    if (parts.length >= 3) {
+        const bCode = parts[0];
+        const sbOrder = parseInt(parts[1]); // Order sub-bidang dalam bidang tersebut
+
+        // 1. Temukan dan klik Bidang yang tepat
         const bidangItems = document.querySelectorAll('#rabBidangList .rab-item');
-        if (bidangItems[bidangIdx]) bidangItems[bidangIdx].click();
+        let targetBidang = null;
+        bidangItems.forEach(item => {
+            const badge = item.querySelector('.idx-badge');
+            if (badge && badge.innerText === bCode) targetBidang = item;
+        });
 
-        setTimeout(() => {
-            const subItems = document.querySelectorAll('#rabSubBidangList .rab-item');
-            if (subItems[subBidangIdx]) subItems[subBidangIdx].click();
-            // Buka modal rincian
-            setTimeout(() => openRabRincianModal(ssCode, ssName), 300);
-        }, 300);
+        if (targetBidang) {
+            targetBidang.click();
+            
+            // 2. Tunggu sub-bidang dimuat, lalu klik sub-bidang yang sesuai
+            setTimeout(() => {
+                const subItems = document.querySelectorAll('#rabSubBidangList .rab-item');
+                // Kita cari berdasarkan urutan di kode (parts[1])
+                if (subItems[sbOrder - 1]) {
+                    subItems[sbOrder - 1].click();
+                    
+                    // 3. Akhirnya buka modal rincian setelah rincian dimuat
+                    setTimeout(() => {
+                        openRabRincianModal(ssCode, ssName);
+                    }, 400);
+                }
+            }, 400);
+        } else {
+            // Fallback jika navigasi gagal
+            openRabRincianModal(ssCode, ssName);
+        }
     } else {
         openRabRincianModal(ssCode, ssName);
     }

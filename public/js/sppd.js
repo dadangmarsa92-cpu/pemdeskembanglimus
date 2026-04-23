@@ -44,19 +44,35 @@ function initFormInteractivity() {
     });
   }
 
-  // Title Case for Text Inputs
-  const titleCaseInputs = [
-    'sppdNama', 'sppdJabatan', 'sppdAcara', 'sppdTujuan', 'sppdDasar',
-    'sppdFollowerNama', 'sppdFollowerJabatan'
-  ];
-  titleCaseInputs.forEach(id => {
+  // ── Input Text Formatting ──
+  // Kolom Nama: Kapital di awal kata (Title Case)
+  const nameInputs = ['sppdNama', 'sppdFollowerNama'];
+  nameInputs.forEach(id => {
     const input = document.getElementById(id);
     if (input) {
       input.addEventListener('input', function(e) {
         const start = this.selectionStart;
         const end = this.selectionEnd;
-        // Convert to lowercase first, then uppercase first letter of each word
+        // Title Case: Huruf besar di awal setiap kata
         this.value = this.value.toLowerCase().replace(/(^|\s)\S/g, l => l.toUpperCase());
+        this.setSelectionRange(start, end);
+      });
+    }
+  });
+
+  // Kolom Lainnya: Tulisan biasa / Huruf kecil semua
+  const lowerCaseInputs = [
+    'sppdJabatan', 'sppdAcara', 'sppdTujuan', 'sppdDasar',
+    'sppdFollowerJabatan', 'sppdNomorDasar', 'sppdNomor'
+  ];
+  lowerCaseInputs.forEach(id => {
+    const input = document.getElementById(id);
+    if (input) {
+      input.addEventListener('input', function(e) {
+        const start = this.selectionStart;
+        const end = this.selectionEnd;
+        // Lowercase: Huruf kecil semua sesuai permintaan "tulisan biasa"
+        this.value = this.value.toLowerCase();
         this.setSelectionRange(start, end);
       });
     }
@@ -234,9 +250,9 @@ function resetFormToCreateMode() {
   document.getElementById('btnSaveSppdText').textContent = 'Simpan';
   document.getElementById('btnCancelSppdText').textContent = 'Batal / Reset';
 
-  // Default Kendaraan: Sepeda Motor
+  // Default Kendaraan: sepeda motor
   const selectKendaraan = document.getElementById('sppdKendaraan');
-  if (selectKendaraan) selectKendaraan.value = 'Sepeda Motor';
+  if (selectKendaraan) selectKendaraan.value = 'sepeda motor';
 
   loadNextNomorSurat();
 
@@ -255,7 +271,7 @@ async function loadNextNomorSurat() {
     const result = await res.json();
     if (result.success && !isEditMode) {
       const nomorField = document.getElementById('sppdNomor');
-      if (nomorField) nomorField.value = result.nomor;
+      if (nomorField) nomorField.value = result.nomor.toLowerCase();
     }
   } catch (err) {
     console.warn('Gagal memuat nomor surat otomatis:', err);
@@ -403,7 +419,7 @@ async function saveFollowerSppd() {
     const numRes = await fetch('/api/sppd/next-number');
     if (numRes.ok) {
       const numResult = await numRes.json();
-      if (numResult.success) newNomor = numResult.nomor;
+      if (numResult.success) newNomor = numResult.nomor.toLowerCase();
     }
 
     const payload = {
