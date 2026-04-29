@@ -127,6 +127,44 @@
               </li>
             </ul>
           </li>
+
+          <li class="sidebar-dropdown">
+            <a href="#" class="sidebar-link sidebar-dropdown-toggle" id="ijinKeramaianDropdownToggle">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 1-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+              <span>Ijin Keramaian</span>
+              <svg class="dropdown-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </a>
+            <ul class="sidebar-submenu" id="ijinKeramaianSubmenu">
+              <li>
+                <a href="#" class="sidebar-link sidebar-sublink" data-page="ijin-keramaian">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                  </svg>
+                  <span>Ijin Keramaian</span>
+                </a>
+              </li>
+              <li>
+                <a href="#" class="sidebar-link sidebar-sublink" data-page="ijin-tempat">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                  </svg>
+                  <span>Ijin Tempat</span>
+                </a>
+              </li>
+            </ul>
+          </li>
+
           <li class="sidebar-section-label">Lainnya</li>
           <li>
             <a href="#" class="sidebar-link" data-page="laporan">
@@ -969,6 +1007,402 @@
           </div>
         </div>
 
+        <!-- ═══════════════ PAGE: IJIN KERAMAIAN ═══════════════ -->
+        <div class="page-section" id="page-ijin-keramaian">
+          <div class="page-header-section">
+            <div>
+              <h1>🎉 Ijin Keramaian</h1>
+              <p>Kelola surat ijin keramaian dan ijin penggunaan tempat</p>
+            </div>
+          </div>
+
+          <div class="settings-tabs" id="ijinKeramaianTabs">
+            <button class="tab-btn active" data-tab="ik-keramaian">🎪 Ijin Keramaian</button>
+            <button class="tab-btn" data-tab="ik-tempat">🏠 Ijin Tempat</button>
+          </div>
+
+          <!-- ── TAB: IJIN KERAMAIAN ── -->
+          <div id="ik-keramaian" class="ik-tab-content" style="margin-top:24px;">
+
+            <!-- Quick Stats -->
+            <div class="stats-grid" style="margin-bottom:28px;">
+              <div class="stat-card">
+                <div class="stat-icon blue">🎉</div>
+                <div class="stat-value" id="statIjinKeramaianTotal">0</div>
+                <div class="stat-label">Total Ijin Keramaian</div>
+              </div>
+            </div>
+
+            <!-- Form Input -->
+            <div class="form-card" id="ijinKeramaianFormCard" style="margin-bottom:28px;">
+              <div class="form-card-title" id="ijinKeramaianFormTitle">📝 Input Data Ijin Keramaian</div>
+              <form id="ijinKeramaianForm">
+                <input type="hidden" id="ijinKeramaianEditId" value="">
+
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label for="ikNomor">
+                      Nomor Surat
+                      <span class="nomor-auto-badge">✨ Auto</span>
+                    </label>
+                    <div class="input-wrapper">
+                      <span class="input-icon">🔢</span>
+                      <input type="text" id="ikNomor" class="form-input" placeholder="Memuat nomor otomatis..." readonly style="opacity:0.8; cursor:not-allowed;">
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="ikNomorIjin">Nomor Ijin Keramaian</label>
+                    <div class="input-wrapper">
+                      <span class="input-icon">🔖</span>
+                      <input type="text" id="ikNomorIjin" class="form-input" placeholder="Contoh: 005/IK/2026">
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="ikTanggalSurat">Tanggal Surat</label>
+                    <div class="input-wrapper">
+                      <span class="input-icon">📅</span>
+                      <input type="text" id="ikTanggalSurat" class="form-input" placeholder="dd/mm/yyyy">
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="ikNamaPemohon">Nama Pemohon</label>
+                    <div class="input-wrapper">
+                      <span class="input-icon">👤</span>
+                      <input type="text" id="ikNamaPemohon" class="form-input" placeholder="Nama Lengkap Pemohon">
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="ikNIKPemohon">NIK Pemohon</label>
+                    <div class="input-wrapper">
+                      <span class="input-icon">🆔</span>
+                      <input type="text" id="ikNIKPemohon" class="form-input" placeholder="16 digit NIK" maxlength="16">
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="ikTempatLahir">Tempat Lahir</label>
+                    <div class="input-wrapper">
+                      <span class="input-icon">📍</span>
+                      <input type="text" id="ikTempatLahir" class="form-input" placeholder="Tempat Lahir Pemohon">
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="ikTanggalLahir">Tanggal Lahir</label>
+                    <div class="input-wrapper">
+                      <span class="input-icon">📅</span>
+                      <input type="text" id="ikTanggalLahir" class="form-input" placeholder="dd/mm/yyyy">
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="ikJenisKelamin">Jenis Kelamin</label>
+                    <div class="input-wrapper">
+                      <span class="input-icon">⚥</span>
+                      <select id="ikJenisKelamin" class="form-input" style="padding-left:48px;">
+                        <option value="" disabled selected>Pilih Jenis Kelamin...</option>
+                        <option value="Laki-laki">Laki-laki</option>
+                        <option value="Perempuan">Perempuan</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="ikAgama">Agama</label>
+                    <div class="input-wrapper">
+                      <span class="input-icon">🕌</span>
+                      <select id="ikAgama" class="form-input" style="padding-left:48px;">
+                        <option value="" disabled selected>Pilih Agama...</option>
+                        <option value="Islam">Islam</option>
+                        <option value="Kristen">Kristen</option>
+                        <option value="Katolik">Katolik</option>
+                        <option value="Hindu">Hindu</option>
+                        <option value="Buddha">Buddha</option>
+                        <option value="Konghucu">Konghucu</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="ikKewarganegaraan">Kewarganegaraan</label>
+                    <div class="input-wrapper">
+                      <span class="input-icon">🌍</span>
+                      <input type="text" id="ikKewarganegaraan" class="form-input" placeholder="WNI" value="WNI">
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="ikPekerjaan">Pekerjaan</label>
+                    <div class="input-wrapper">
+                      <span class="input-icon">💼</span>
+                      <input type="text" id="ikPekerjaan" class="form-input" placeholder="Pekerjaan Pemohon">
+                    </div>
+                  </div>
+
+                  <div class="form-group" style="grid-column: span 2;">
+                    <label for="ikAlamat">Alamat Pemohon</label>
+                    <div class="input-wrapper">
+                      <span class="input-icon">🏠</span>
+                      <input type="text" id="ikAlamat" class="form-input" placeholder="Alamat Lengkap Pemohon">
+                    </div>
+                  </div>
+
+                  <div class="form-group" style="grid-column: span 2;">
+                    <label for="ikNamaAcara">Nama / Jenis Acara</label>
+                    <div class="input-wrapper">
+                      <span class="input-icon">🎪</span>
+                      <input type="text" id="ikNamaAcara" class="form-input" placeholder="Contoh: Resepsi Pernikahan">
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="ikJenisAcara">Jenis Acara (Hiburan)</label>
+                    <div class="input-wrapper">
+                      <span class="input-icon">🎵</span>
+                      <input type="text" id="ikJenisAcara" class="form-input" placeholder="Contoh: Orkes, Organ Tunggal">
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="ikJumlahPengunjung">Jumlah Pengunjung</label>
+                    <div class="input-wrapper">
+                      <span class="input-icon">👥</span>
+                      <input type="text" id="ikJumlahPengunjung" class="form-input" placeholder="Contoh: ± 200 orang">
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="ikHariTanggalAcara">Hari / Tanggal Acara</label>
+                    <div class="input-wrapper">
+                      <span class="input-icon">📅</span>
+                      <input type="text" id="ikHariTanggalAcara" class="form-input" placeholder="Klik untuk memilih tanggal" readonly style="cursor:pointer;">
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="ikWaktuAcara">Waktu Acara</label>
+                    <div class="input-wrapper">
+                      <span class="input-icon">🕒</span>
+                      <input type="text" id="ikWaktuAcara" class="form-input" placeholder="Contoh: 09.00 WIB s/d Selesai">
+                    </div>
+                  </div>
+
+                  <div class="form-group" style="grid-column: span 2;">
+                    <label for="ikLokasiAcara">Lokasi / Tempat Acara</label>
+                    <div class="input-wrapper">
+                      <span class="input-icon">📍</span>
+                      <input type="text" id="ikLokasiAcara" class="form-input" placeholder="Alamat Lengkap Lokasi Acara">
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-actions" style="margin-top:24px;">
+                  <button type="submit" class="btn-save" id="btnSaveIjinKeramaian">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;vertical-align:middle;">
+                      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                      <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                      <polyline points="7 3 7 8 15 8"></polyline>
+                    </svg>
+                    <span id="btnSaveIjinKeramaianText">Simpan Data</span>
+                  </button>
+                  <button type="button" class="btn-cancel" id="btnCancelIjinKeramaian">Batal</button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Data Table -->
+            <div class="table-section">
+              <h2>📊 Daftar Ijin Keramaian</h2>
+              <div style="overflow-x:auto;">
+                <table class="data-table" id="ijinKeramaianTable">
+                  <thead>
+                    <tr>
+                      <th>No</th>
+                      <th>Nomor Surat</th>
+                      <th>Nama Pemohon</th>
+                      <th>Nama Acara</th>
+                      <th>Hari/Tanggal Acara</th>
+                      <th>Lokasi</th>
+                      <th style="width:120px;">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ijinKeramaianTableBody">
+                    <!-- JS Injected -->
+                  </tbody>
+                </table>
+              </div>
+              <div class="empty-state" id="ijinKeramaianEmptyState" style="display:none; padding:60px 40px;">
+                <div class="empty-icon">🎉</div>
+                <h3>Belum Ada Data Ijin Keramaian</h3>
+                <p>Data yang tersimpan akan muncul di daftar ini.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── TAB: IJIN TEMPAT ── -->
+          <div id="ik-tempat" class="ik-tab-content" style="margin-top:24px; display:none;">
+
+            <!-- Quick Stats -->
+            <div class="stats-grid" style="margin-bottom:28px;">
+              <div class="stat-card">
+                <div class="stat-icon green">🏠</div>
+                <div class="stat-value" id="statIjinTempatTotal">0</div>
+                <div class="stat-label">Total Ijin Tempat</div>
+              </div>
+            </div>
+
+            <!-- Form Input -->
+            <div class="form-card" id="ijinTempatFormCard" style="margin-bottom:28px;">
+              <div class="form-card-title" id="ijinTempatFormTitle">📝 Input Data Ijin Tempat</div>
+              <form id="ijinTempatForm">
+                <input type="hidden" id="ijinTempatEditId" value="">
+
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label for="itTanggalSurat">Tanggal Surat</label>
+                    <div class="input-wrapper">
+                      <span class="input-icon">📅</span>
+                      <input type="text" id="itTanggalSurat" class="form-input" placeholder="dd/mm/yyyy">
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="itNamaPemilikLahan">Nama Pemilik Lahan / Tempat</label>
+                    <div class="input-wrapper">
+                      <span class="input-icon">👤</span>
+                      <input type="text" id="itNamaPemilikLahan" class="form-input" placeholder="Nama Lengkap Pemilik Lahan">
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="itNIKPemilik">NIK Pemilik Lahan</label>
+                    <div class="input-wrapper">
+                      <span class="input-icon">🆔</span>
+                      <input type="text" id="itNIKPemilik" class="form-input" placeholder="16 digit NIK" maxlength="16">
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="itTempatLahirPemilik">Tempat Lahir Pemilik</label>
+                    <div class="input-wrapper">
+                      <span class="input-icon">📍</span>
+                      <input type="text" id="itTempatLahirPemilik" class="form-input" placeholder="Tempat Lahir">
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="itTanggalLahirPemilik">Tanggal Lahir Pemilik</label>
+                    <div class="input-wrapper">
+                      <span class="input-icon">📅</span>
+                      <input type="text" id="itTanggalLahirPemilik" class="form-input" placeholder="dd/mm/yyyy">
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="itPekerjaanPemilik">Pekerjaan Pemilik</label>
+                    <div class="input-wrapper">
+                      <span class="input-icon">💼</span>
+                      <input type="text" id="itPekerjaanPemilik" class="form-input" placeholder="Pekerjaan">
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="itJabatanPemilik">Jabatan Pemilik (jika ada)</label>
+                    <div class="input-wrapper">
+                      <span class="input-icon">🏷️</span>
+                      <input type="text" id="itJabatanPemilik" class="form-input" placeholder="Jabatan / - jika tidak ada">
+                    </div>
+                  </div>
+
+                  <div class="form-group" style="grid-column: span 2;">
+                    <label for="itAlamatPemilik">Alamat Pemilik Lahan</label>
+                    <div class="input-wrapper">
+                      <span class="input-icon">🏠</span>
+                      <input type="text" id="itAlamatPemilik" class="form-input" placeholder="Alamat Lengkap Pemilik">
+                    </div>
+                  </div>
+
+                  <div class="form-group" style="grid-column: span 2;">
+                    <label for="itNamaAcara">Nama Acara</label>
+                    <div class="input-wrapper">
+                      <span class="input-icon">🎪</span>
+                      <input type="text" id="itNamaAcara" class="form-input" placeholder="Contoh: Resepsi Pernikahan">
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="itHariTanggalAcara">Hari / Tanggal Acara</label>
+                    <div class="input-wrapper">
+                      <span class="input-icon">📅</span>
+                      <input type="text" id="itHariTanggalAcara" class="form-input" placeholder="Klik untuk memilih tanggal" readonly style="cursor:pointer;">
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="itWaktuAcara">Waktu Acara</label>
+                    <div class="input-wrapper">
+                      <span class="input-icon">🕒</span>
+                      <input type="text" id="itWaktuAcara" class="form-input" placeholder="Contoh: 09.00 WIB s/d Selesai">
+                    </div>
+                  </div>
+
+                  <div class="form-group" style="grid-column: span 2;">
+                    <label for="itTempatAcara">Tempat / Lokasi Acara</label>
+                    <div class="input-wrapper">
+                      <span class="input-icon">📍</span>
+                      <input type="text" id="itTempatAcara" class="form-input" placeholder="Alamat Lengkap Lokasi Acara" required>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-actions" style="margin-top:24px;">
+                  <button type="submit" class="btn-save" id="btnSaveIjinTempat">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;vertical-align:middle;">
+                      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                      <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                      <polyline points="7 3 7 8 15 8"></polyline>
+                    </svg>
+                    <span id="btnSaveIjinTempatText">Simpan Data</span>
+                  </button>
+                  <button type="button" class="btn-cancel" id="btnCancelIjinTempat">Batal</button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Data Table -->
+            <div class="table-section">
+              <h2>📊 Daftar Ijin Tempat</h2>
+              <div style="overflow-x:auto;">
+                <table class="data-table" id="ijinTempatTable">
+                  <thead>
+                    <tr>
+                      <th>No</th>
+                      <th>Nama Pemilik Lahan</th>
+                      <th>NIK</th>
+                      <th>Nama Acara</th>
+                      <th>Hari/Tanggal Acara</th>
+                      <th>Tempat Acara</th>
+                      <th style="width:120px;">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ijinTempatTableBody">
+                    <!-- JS Injected -->
+                  </tbody>
+                </table>
+              </div>
+              <div class="empty-state" id="ijinTempatEmptyState" style="display:none; padding:60px 40px;">
+                <div class="empty-icon">🏠</div>
+                <h3>Belum Ada Data Ijin Tempat</h3>
+                <p>Data yang tersimpan akan muncul di daftar ini.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- ═══════════════ PAGE: LAPORAN ═══════════════ -->
         <div class="page-section" id="page-laporan">
           <div class="page-header-section">
@@ -1252,6 +1686,7 @@
   <script src="js/rab.js"></script>
   <script src="js/surat-ahli-waris.js"></script>
   <script src="js/daftar-hadir.js"></script>
+  <script src="js/ijin-keramaian.js"></script>
   <script src="js/settings.js"></script>
 </body>
 </html>

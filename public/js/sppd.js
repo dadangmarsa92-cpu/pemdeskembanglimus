@@ -60,19 +60,19 @@ function initFormInteractivity() {
     }
   });
 
-  // Kolom Lainnya: Tulisan biasa / Huruf kecil semua
-  const lowerCaseInputs = [
+  // Kolom Lainnya: Kapital semua
+  const upperCaseInputs = [
     'sppdJabatan', 'sppdAcara', 'sppdTujuan', 'sppdDasar',
     'sppdFollowerJabatan', 'sppdNomorDasar', 'sppdNomor'
   ];
-  lowerCaseInputs.forEach(id => {
+  upperCaseInputs.forEach(id => {
     const input = document.getElementById(id);
     if (input) {
       input.addEventListener('input', function(e) {
         const start = this.selectionStart;
         const end = this.selectionEnd;
-        // Lowercase: Huruf kecil semua sesuai permintaan "tulisan biasa"
-        this.value = this.value.toLowerCase();
+        // Uppercase: Huruf besar semua sesuai permintaan
+        this.value = this.value.toUpperCase();
         this.setSelectionRange(start, end);
       });
     }
@@ -271,7 +271,7 @@ async function loadNextNomorSurat() {
     const result = await res.json();
     if (result.success && !isEditMode) {
       const nomorField = document.getElementById('sppdNomor');
-      if (nomorField) nomorField.value = result.nomor.toLowerCase();
+      if (nomorField) nomorField.value = result.nomor.toUpperCase();
     }
   } catch (err) {
     console.warn('Gagal memuat nomor surat otomatis:', err);
@@ -419,7 +419,7 @@ async function saveFollowerSppd() {
     const numRes = await fetch('/api/sppd/next-number');
     if (numRes.ok) {
       const numResult = await numRes.json();
-      if (numResult.success) newNomor = numResult.nomor.toLowerCase();
+      if (numResult.success) newNomor = numResult.nomor.toUpperCase();
     }
 
     const payload = {

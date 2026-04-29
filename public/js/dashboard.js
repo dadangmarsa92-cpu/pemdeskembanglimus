@@ -24,7 +24,10 @@ const pageTitles = {
   sk: 'SK Narasumber',
   rab: 'Rencana Anggaran Biaya (RAB)',
   laporan: 'Laporan',
-  pengaturan: 'Pengaturan'
+  pengaturan: 'Pengaturan',
+  'ijin-keramaian': 'Ijin Keramaian',
+  'ijin-tempat': 'Ijin Keramaian — Ijin Tempat',
+  'daftar-hadir': 'Daftar Hadir & Penerimaan'
 };
 
 // ── Initialize Sidebar Toggle ──
@@ -172,12 +175,17 @@ function navigateTo(page) {
 
   // Auto-open dropdown if sub-page is within it
   const suratPages = ['narasumber', 'surat-ahli-waris'];
-  const suratDropdown = document.querySelector('.sidebar-dropdown');
-  if (suratDropdown) {
-    if (suratPages.includes(page)) {
-      suratDropdown.classList.add('open');
+  const ijinPages  = ['ijin-keramaian', 'ijin-tempat'];
+  const allDropdowns = document.querySelectorAll('.sidebar-dropdown');
+  allDropdowns.forEach(dropdown => {
+    const toggle = dropdown.querySelector('.sidebar-dropdown-toggle');
+    if (!toggle) return;
+    if (toggle.id === 'suratDropdownToggle' && suratPages.includes(page)) {
+      dropdown.classList.add('open');
+    } else if (toggle.id === 'ijinKeramaianDropdownToggle' && ijinPages.includes(page)) {
+      dropdown.classList.add('open');
     }
-  }
+  });
 
   // Show/hide page sections
   document.querySelectorAll('.page-section').forEach(section => {
@@ -223,6 +231,41 @@ function navigateTo(page) {
   if (page === 'surat-ahli-waris' && typeof loadAhliWarisData === 'function') {
     loadAhliWarisData();
     loadNextAhliWarisNumber();
+  }
+
+  // Ijin Keramaian — kedua sub-page menggunakan page-ijin-keramaian yang sama
+  if (page === 'ijin-keramaian' || page === 'ijin-tempat') {
+    // Always show the page-ijin-keramaian section (one page, two tabs)
+    document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+    const ikPage = document.getElementById('page-ijin-keramaian');
+    if (ikPage) ikPage.classList.add('active');
+
+    if (page === 'ijin-keramaian') {
+      // Switch to keramaian tab
+      const ikTabs = document.getElementById('ijinKeramaianTabs');
+      if (ikTabs) {
+        ikTabs.querySelectorAll('.tab-btn').forEach(b => {
+          b.classList.toggle('active', b.dataset.tab === 'ik-keramaian');
+        });
+      }
+      document.querySelectorAll('.ik-tab-content').forEach(c => c.style.display = 'none');
+      const tab = document.getElementById('ik-keramaian');
+      if (tab) tab.style.display = 'block';
+      if (typeof loadNextIKNumber === 'function') loadNextIKNumber();
+      if (typeof loadIjinKeramaianData === 'function') loadIjinKeramaianData();
+    } else {
+      // Switch to tempat tab
+      const ikTabs = document.getElementById('ijinKeramaianTabs');
+      if (ikTabs) {
+        ikTabs.querySelectorAll('.tab-btn').forEach(b => {
+          b.classList.toggle('active', b.dataset.tab === 'ik-tempat');
+        });
+      }
+      document.querySelectorAll('.ik-tab-content').forEach(c => c.style.display = 'none');
+      const tab = document.getElementById('ik-tempat');
+      if (tab) tab.style.display = 'block';
+      if (typeof loadIjinTempatData === 'function') loadIjinTempatData();
+    }
   }
 }
 
@@ -564,7 +607,7 @@ function showToast(message, type = 'error') {
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
 
-  const icon = type === 'success' ? '✅' : '❌';
+  const icon = type === 'success' ? '✅' : type === 'info' ? 'ℹ️' : '❌';
   toast.innerHTML = `<span class="toast-icon">${icon}</span><span>${message}</span>`;
 
   container.appendChild(toast);

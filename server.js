@@ -38,7 +38,9 @@ async function initDatabase() {
       `CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)`,
       `CREATE TABLE IF NOT EXISTS narasumber (id INTEGER PRIMARY KEY AUTOINCREMENT, nomor_surat TEXT NOT NULL, tanggal_surat TEXT NOT NULL, nama_narasumber TEXT NOT NULL, bidang TEXT NOT NULL, kegiatan TEXT NOT NULL, tempat_pelaksanaan TEXT NOT NULL, tanggal_pelaksanaan TEXT NOT NULL, waktu_pelaksanaan TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`,
       `CREATE TABLE IF NOT EXISTS surat_ahli_waris (id INTEGER PRIMARY KEY AUTOINCREMENT, nomor_surat TEXT NOT NULL, tanggal_surat TEXT NOT NULL, nama_pewaris TEXT NOT NULL, tempat_lahir_pewaris TEXT NOT NULL, tgl_lahir_pewaris TEXT NOT NULL, tgl_meninggal TEXT NOT NULL, alamat_pewaris TEXT NOT NULL, nama_ahli_waris TEXT NOT NULL, hubungan TEXT NOT NULL, nik_ahli_waris TEXT NOT NULL, alamat_ahli_waris TEXT NOT NULL, keterangan TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`,
-      `CREATE TABLE IF NOT EXISTS rab_records (id INTEGER PRIMARY KEY AUTOINCREMENT, tahun TEXT NOT NULL, ss_code TEXT NOT NULL, ss_name TEXT NOT NULL, judul_kegiatan TEXT DEFAULT '', data_json TEXT NOT NULL, grand_total REAL NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, UNIQUE(tahun, ss_code))`
+      `CREATE TABLE IF NOT EXISTS rab_records (id INTEGER PRIMARY KEY AUTOINCREMENT, tahun TEXT NOT NULL, ss_code TEXT NOT NULL, ss_name TEXT NOT NULL, judul_kegiatan TEXT DEFAULT '', data_json TEXT NOT NULL, grand_total REAL NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, UNIQUE(tahun, ss_code))`,
+      `CREATE TABLE IF NOT EXISTS ijin_keramaian (id INTEGER PRIMARY KEY AUTOINCREMENT, nomor_surat TEXT NOT NULL, nomor_ijin_keramaian TEXT, tanggal_surat TEXT NOT NULL, nama_pemohon TEXT NOT NULL, nik_pemohon TEXT NOT NULL, tempat_lahir_pemohon TEXT NOT NULL, tanggal_lahir_pemohon TEXT NOT NULL, jenis_kelamin_pemohon TEXT NOT NULL, agama_pemohon TEXT NOT NULL, kewarganegaraan_pemohon TEXT NOT NULL DEFAULT 'WNI', pekerjaan_pemohon TEXT NOT NULL, alamat_pemohon TEXT NOT NULL, nama_acara TEXT NOT NULL, jenis_acara TEXT, jumlah_pengunjung TEXT, hari_tanggal_acara TEXT NOT NULL, waktu_acara TEXT NOT NULL, lokasi_acara TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`,
+      `CREATE TABLE IF NOT EXISTS ijin_tempat (id INTEGER PRIMARY KEY AUTOINCREMENT, tanggal_surat TEXT NOT NULL, nama_pemilik_lahan TEXT NOT NULL, nik_pemilik_lahan TEXT NOT NULL, tempat_lahir_pemilik_lahan TEXT NOT NULL, tanggal_lahir_pemilik_lahan TEXT NOT NULL, pekerjaan_pemilik_lahan TEXT NOT NULL, jabatan_pemilik_lahan TEXT, nama_acara TEXT NOT NULL, hari_tanggal_acara TEXT NOT NULL, waktu_acara TEXT NOT NULL, tempat_acara TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`
     ];
 
     for (const sql of tables) {
@@ -63,6 +65,7 @@ async function initDatabase() {
       `INSERT OR IGNORE INTO settings (key, value) VALUES ('kode_surat', '096')`,
       `INSERT OR IGNORE INTO settings (key, value) VALUES ('kode_surat_narasumber', '005')`,
       `INSERT OR IGNORE INTO settings (key, value) VALUES ('kode_surat_ahli_waris', '470')`,
+      `INSERT OR IGNORE INTO settings (key, value) VALUES ('kode_surat_ijin_keramaian', '472')`,
       `INSERT OR IGNORE INTO settings (key, value) VALUES ('kode_desa', '18')`,
       `INSERT OR IGNORE INTO settings (key, value) VALUES ('tahun', '${currentYear}')`,
       `INSERT OR IGNORE INTO settings (key, value) VALUES ('nama_desa', 'Kembanglimus')`,
@@ -103,6 +106,7 @@ async function initDatabase() {
     addCol('sppd', 'nomor_surat_dasar', 'TEXT');
     addCol('sppd', 'nominal_rupiah', 'TEXT');
     addCol('sppd', 'file_base64', 'TEXT');
+    addCol('ijin_tempat', 'alamat_pemilik_lahan', 'TEXT');
 
     console.log('💾 Saving initial state...');
     saveDatabase();
@@ -167,6 +171,22 @@ function generateNextAhliWarisNumber() {
 
   const countResult = db.exec(
     `SELECT COUNT(*) FROM surat_ahli_waris WHERE nomor_surat LIKE '%/${tahun}'`
+  );
+  const count = countResult.length > 0 ? countResult[0].values[0][0] : 0;
+  const urutan = String(parseInt(count) + 1).padStart(3, '0');
+
+  return `${kode_surat}/${urutan}/${kode_desa}/${tahun}`;
+}
+
+// Helper: generate next Ijin Keramaian number
+function generateNextIjinKeramaianNumber() {
+  const settings = getSettings();
+  const kode_surat = settings.kode_surat_ijin_keramaian || '472';
+  const kode_desa = settings.kode_desa || '18';
+  const tahun = settings.tahun || new Date().getFullYear().toString();
+
+  const countResult = db.exec(
+    `SELECT COUNT(*) FROM ijin_keramaian WHERE nomor_surat LIKE '%/${tahun}'`
   );
   const count = countResult.length > 0 ? countResult[0].values[0][0] : 0;
   const urutan = String(parseInt(count) + 1).padStart(3, '0');
@@ -1645,6 +1665,271 @@ app.post('/api/cetak/daftar-penerimaan', (req, res) => {
   } catch (err) {
     console.error('Error cetak daftar penerimaan:', err);
     res.status(500).json({ success: false, message: 'Gagal membuat dokumen daftar penerimaan.', error: err.message });
+  }
+});
+
+// ============================================================
+// IJIN KERAMAIAN API ROUTES
+// ============================================================
+
+// Get next nomor
+app.get('/api/ijin-keramaian/next-number', (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ success: false, message: 'Belum login.' });
+  res.json({ success: true, nomor: generateNextIjinKeramaianNumber() });
+});
+
+// Get all
+app.get('/api/ijin-keramaian', (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ success: false, message: 'Belum login.' });
+  const result = db.exec('SELECT * FROM ijin_keramaian ORDER BY id DESC');
+  const items = [];
+  if (result.length > 0) {
+    const columns = result[0].columns;
+    result[0].values.forEach(row => {
+      const obj = {};
+      columns.forEach((col, i) => { obj[col] = row[i]; });
+      items.push(obj);
+    });
+  }
+  res.json({ success: true, data: items });
+});
+
+// Get single
+app.get('/api/ijin-keramaian/:id', (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ success: false, message: 'Belum login.' });
+  const stmt = db.prepare('SELECT * FROM ijin_keramaian WHERE id = ?');
+  stmt.bind([parseInt(req.params.id)]);
+  let item = null;
+  if (stmt.step()) item = stmt.getAsObject();
+  stmt.free();
+  if (!item) return res.status(404).json({ success: false, message: 'Data tidak ditemukan.' });
+  res.json({ success: true, data: item });
+});
+
+// Create
+app.post('/api/ijin-keramaian', (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ success: false, message: 'Belum login.' });
+  const { nomor_surat, nomor_ijin_keramaian, tanggal_surat, nama_pemohon, nik_pemohon, tempat_lahir_pemohon, tanggal_lahir_pemohon, jenis_kelamin_pemohon, agama_pemohon, kewarganegaraan_pemohon, pekerjaan_pemohon, alamat_pemohon, nama_acara, jenis_acara, jumlah_pengunjung, hari_tanggal_acara, waktu_acara, lokasi_acara } = req.body;
+  if (!nomor_surat || !tanggal_surat || !nama_pemohon || !nik_pemohon || !nama_acara || !hari_tanggal_acara || !waktu_acara || !lokasi_acara) {
+    return res.status(400).json({ success: false, message: 'Field wajib belum lengkap.' });
+  }
+  try {
+    db.run(
+      `INSERT INTO ijin_keramaian (nomor_surat, nomor_ijin_keramaian, tanggal_surat, nama_pemohon, nik_pemohon, tempat_lahir_pemohon, tanggal_lahir_pemohon, jenis_kelamin_pemohon, agama_pemohon, kewarganegaraan_pemohon, pekerjaan_pemohon, alamat_pemohon, nama_acara, jenis_acara, jumlah_pengunjung, hari_tanggal_acara, waktu_acara, lokasi_acara) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      [nomor_surat, nomor_ijin_keramaian||'', tanggal_surat, nama_pemohon, nik_pemohon, tempat_lahir_pemohon||'', tanggal_lahir_pemohon||'', jenis_kelamin_pemohon||'', agama_pemohon||'', kewarganegaraan_pemohon||'WNI', pekerjaan_pemohon||'', alamat_pemohon, nama_acara, jenis_acara||'', jumlah_pengunjung||'', hari_tanggal_acara, waktu_acara, lokasi_acara]
+    );
+    saveDatabase();
+    const lastId = db.exec('SELECT last_insert_rowid() as id');
+    const id = lastId[0].values[0][0];
+    res.json({ success: true, message: 'Data Ijin Keramaian berhasil disimpan.', id });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Gagal menyimpan.', error: err.message });
+  }
+});
+
+// Update
+app.put('/api/ijin-keramaian/:id', (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ success: false, message: 'Belum login.' });
+  const { nomor_surat, nomor_ijin_keramaian, tanggal_surat, nama_pemohon, nik_pemohon, tempat_lahir_pemohon, tanggal_lahir_pemohon, jenis_kelamin_pemohon, agama_pemohon, kewarganegaraan_pemohon, pekerjaan_pemohon, alamat_pemohon, nama_acara, jenis_acara, jumlah_pengunjung, hari_tanggal_acara, waktu_acara, lokasi_acara } = req.body;
+  try {
+    db.run(
+      `UPDATE ijin_keramaian SET nomor_surat=?, nomor_ijin_keramaian=?, tanggal_surat=?, nama_pemohon=?, nik_pemohon=?, tempat_lahir_pemohon=?, tanggal_lahir_pemohon=?, jenis_kelamin_pemohon=?, agama_pemohon=?, kewarganegaraan_pemohon=?, pekerjaan_pemohon=?, alamat_pemohon=?, nama_acara=?, jenis_acara=?, jumlah_pengunjung=?, hari_tanggal_acara=?, waktu_acara=?, lokasi_acara=? WHERE id=?`,
+      [nomor_surat, nomor_ijin_keramaian||'', tanggal_surat, nama_pemohon, nik_pemohon, tempat_lahir_pemohon||'', tanggal_lahir_pemohon||'', jenis_kelamin_pemohon||'', agama_pemohon||'', kewarganegaraan_pemohon||'WNI', pekerjaan_pemohon||'', alamat_pemohon, nama_acara, jenis_acara||'', jumlah_pengunjung||'', hari_tanggal_acara, waktu_acara, lokasi_acara, req.params.id]
+    );
+    saveDatabase();
+    res.json({ success: true, message: 'Data Ijin Keramaian berhasil diperbarui.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Gagal memperbarui.', error: err.message });
+  }
+});
+
+// Delete
+app.delete('/api/ijin-keramaian/:id', (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ success: false, message: 'Belum login.' });
+  try {
+    db.run('DELETE FROM ijin_keramaian WHERE id = ?', [req.params.id]);
+    saveDatabase();
+    res.json({ success: true, message: 'Data Ijin Keramaian berhasil dihapus.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Gagal menghapus.', error: err.message });
+  }
+});
+
+// Generate DOCX
+app.get('/api/ijin-keramaian/generate-docx/:id', (req, res) => {
+  if (!req.session.userId) return res.status(401).send('Belum login.');
+  const templatePath = path.join(__dirname, 'templates', 'ijin_keramaian_template.docx');
+  if (!fs.existsSync(templatePath)) return res.status(404).send('Template ijin_keramaian_template.docx tidak ditemukan.');
+  try {
+    const stmt = db.prepare('SELECT * FROM ijin_keramaian WHERE id = ?');
+    stmt.bind([parseInt(req.params.id)]);
+    let item = null;
+    if (stmt.step()) item = stmt.getAsObject();
+    stmt.free();
+    if (!item) return res.status(404).send('Data tidak ditemukan.');
+    const settings = getSettings();
+    const templateData = {
+      nomor_surat:            item.nomor_surat,
+      nomor_ijin_keramaian:   item.nomor_ijin_keramaian || '',
+      tanggal_hari_ini:       formatDateID(item.tanggal_surat),
+      nama_pemohon:           item.nama_pemohon,
+      nik_pemohon:            item.nik_pemohon,
+      tempat_lahir_pemohon:   item.tempat_lahir_pemohon || '',
+      tanggal_lahir_pemohon:  item.tanggal_lahir_pemohon ? formatDateID(item.tanggal_lahir_pemohon) : '',
+      jenis_kelamin_pemohon:  item.jenis_kelamin_pemohon || '',
+      agama_pemohon:          item.agama_pemohon || '',
+      kewarganegaraan_pemohon: item.kewarganegaraan_pemohon || 'WNI',
+      pekerjaan_pemohon:      item.pekerjaan_pemohon || '',
+      alamat_pemohon:         item.alamat_pemohon,
+      nama_acara:             item.nama_acara,
+      jenis_acara:            item.jenis_acara || '',
+      jumlah_pengunjung:      item.jumlah_pengunjung || '',
+      hari_tanggal_acara:     item.hari_tanggal_acara,
+      waktu_acara:            item.waktu_acara,
+      lokasi_acara:           item.lokasi_acara,
+      nama_desa:              settings.nama_desa || 'Kembanglimus',
+      nama_kecamatan:         settings.nama_kecamatan || 'Borobudur',
+      nama_kabupaten:         settings.nama_kabupaten || 'Magelang',
+      kepala_desa:            settings.kepala_desa || 'SOETJI ARIMBI',
+    };
+    const content = fs.readFileSync(templatePath);
+    const zip = new PizZip(content);
+    const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
+    doc.render(templateData);
+    const buf = doc.getZip().generate({ type: 'nodebuffer', compression: 'DEFLATE' });
+    const safeFilename = `Ijin_Keramaian_${item.nama_pemohon.replace(/[^a-zA-Z0-9]/g, '_')}.docx`;
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}"`);
+    res.setHeader('Content-Length', buf.length);
+    res.send(buf);
+  } catch (err) {
+    console.error('❌ Ijin Keramaian DOCX Error:', err);
+    res.status(500).send('Gagal membuat dokumen. Periksa template.');
+  }
+});
+
+// ============================================================
+// IJIN TEMPAT API ROUTES
+// ============================================================
+
+// Get all
+app.get('/api/ijin-tempat', (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ success: false, message: 'Belum login.' });
+  const result = db.exec('SELECT * FROM ijin_tempat ORDER BY id DESC');
+  const items = [];
+  if (result.length > 0) {
+    const columns = result[0].columns;
+    result[0].values.forEach(row => {
+      const obj = {};
+      columns.forEach((col, i) => { obj[col] = row[i]; });
+      items.push(obj);
+    });
+  }
+  res.json({ success: true, data: items });
+});
+
+// Get single
+app.get('/api/ijin-tempat/:id', (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ success: false, message: 'Belum login.' });
+  const stmt = db.prepare('SELECT * FROM ijin_tempat WHERE id = ?');
+  stmt.bind([parseInt(req.params.id)]);
+  let item = null;
+  if (stmt.step()) item = stmt.getAsObject();
+  stmt.free();
+  if (!item) return res.status(404).json({ success: false, message: 'Data tidak ditemukan.' });
+  res.json({ success: true, data: item });
+});
+
+// Create
+app.post('/api/ijin-tempat', (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ success: false, message: 'Belum login.' });
+  const { tanggal_surat, nama_pemilik_lahan, nik_pemilik_lahan, tempat_lahir_pemilik_lahan, tanggal_lahir_pemilik_lahan, pekerjaan_pemilik_lahan, jabatan_pemilik_lahan, alamat_pemilik_lahan, nama_acara, hari_tanggal_acara, waktu_acara, tempat_acara } = req.body;
+  if (!tanggal_surat || !nama_pemilik_lahan || !nik_pemilik_lahan || !nama_acara || !hari_tanggal_acara || !waktu_acara || !tempat_acara) {
+    return res.status(400).json({ success: false, message: 'Field wajib belum lengkap.' });
+  }
+  try {
+    db.run(
+      `INSERT INTO ijin_tempat (tanggal_surat, nama_pemilik_lahan, nik_pemilik_lahan, tempat_lahir_pemilik_lahan, tanggal_lahir_pemilik_lahan, pekerjaan_pemilik_lahan, jabatan_pemilik_lahan, alamat_pemilik_lahan, nama_acara, hari_tanggal_acara, waktu_acara, tempat_acara) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+      [tanggal_surat, nama_pemilik_lahan, nik_pemilik_lahan, tempat_lahir_pemilik_lahan||'', tanggal_lahir_pemilik_lahan||'', pekerjaan_pemilik_lahan||'', jabatan_pemilik_lahan||'-', alamat_pemilik_lahan||'', nama_acara, hari_tanggal_acara, waktu_acara, tempat_acara]
+    );
+    saveDatabase();
+    const lastId = db.exec('SELECT last_insert_rowid() as id');
+    const id = lastId[0].values[0][0];
+    res.json({ success: true, message: 'Data Ijin Tempat berhasil disimpan.', id });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Gagal menyimpan.', error: err.message });
+  }
+});
+
+// Update
+app.put('/api/ijin-tempat/:id', (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ success: false, message: 'Belum login.' });
+  const { tanggal_surat, nama_pemilik_lahan, nik_pemilik_lahan, tempat_lahir_pemilik_lahan, tanggal_lahir_pemilik_lahan, pekerjaan_pemilik_lahan, jabatan_pemilik_lahan, alamat_pemilik_lahan, nama_acara, hari_tanggal_acara, waktu_acara, tempat_acara } = req.body;
+  try {
+    db.run(
+      `UPDATE ijin_tempat SET tanggal_surat=?, nama_pemilik_lahan=?, nik_pemilik_lahan=?, tempat_lahir_pemilik_lahan=?, tanggal_lahir_pemilik_lahan=?, pekerjaan_pemilik_lahan=?, jabatan_pemilik_lahan=?, alamat_pemilik_lahan=?, nama_acara=?, hari_tanggal_acara=?, waktu_acara=?, tempat_acara=? WHERE id=?`,
+      [tanggal_surat, nama_pemilik_lahan, nik_pemilik_lahan, tempat_lahir_pemilik_lahan||'', tanggal_lahir_pemilik_lahan||'', pekerjaan_pemilik_lahan||'', jabatan_pemilik_lahan||'-', alamat_pemilik_lahan||'', nama_acara, hari_tanggal_acara, waktu_acara, tempat_acara, req.params.id]
+    );
+    saveDatabase();
+    res.json({ success: true, message: 'Data Ijin Tempat berhasil diperbarui.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Gagal memperbarui.', error: err.message });
+  }
+});
+
+// Delete
+app.delete('/api/ijin-tempat/:id', (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ success: false, message: 'Belum login.' });
+  try {
+    db.run('DELETE FROM ijin_tempat WHERE id = ?', [req.params.id]);
+    saveDatabase();
+    res.json({ success: true, message: 'Data Ijin Tempat berhasil dihapus.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Gagal menghapus.', error: err.message });
+  }
+});
+
+// Generate DOCX
+app.get('/api/ijin-tempat/generate-docx/:id', (req, res) => {
+  if (!req.session.userId) return res.status(401).send('Belum login.');
+  const templatePath = path.join(__dirname, 'templates', 'surat_ijin_tempat_template.docx');
+  if (!fs.existsSync(templatePath)) return res.status(404).send('Template surat_ijin_tempat_template.docx tidak ditemukan.');
+  try {
+    const stmt = db.prepare('SELECT * FROM ijin_tempat WHERE id = ?');
+    stmt.bind([parseInt(req.params.id)]);
+    let item = null;
+    if (stmt.step()) item = stmt.getAsObject();
+    stmt.free();
+    if (!item) return res.status(404).send('Data tidak ditemukan.');
+    const settings = getSettings();
+    const templateData = {
+      nama_pemilik_lahan:            item.nama_pemilik_lahan,
+      nik_pemilik_lahan:             item.nik_pemilik_lahan,
+      tempat_lahir_pemilik_lahan:    item.tempat_lahir_pemilik_lahan || '',
+      tanggal_lahir_pemilik_lahan:   item.tanggal_lahir_pemilik_lahan ? formatDateID(item.tanggal_lahir_pemilik_lahan) : '',
+      pekerjaan_pemilik_lahan:       item.pekerjaan_pemilik_lahan || '',
+      jabatan_pemilik_lahan:         item.jabatan_pemilik_lahan || '-',
+      alamat_pemilik_lahan:          item.alamat_pemilik_lahan || '',
+      nama_acara:                    item.nama_acara,
+      hari_tangga_acara:             item.hari_tanggal_acara,  // typo di template: hari_tangga_acara
+      waktu_acara:                   item.waktu_acara,
+      tempat_acara:                  item.tempat_acara,
+      tanggal_hari_ini:              formatDateID(item.tanggal_surat),
+      nama_desa:                     settings.nama_desa || 'Kembanglimus',
+    };
+    const content = fs.readFileSync(templatePath);
+    const zip = new PizZip(content);
+    const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
+    doc.render(templateData);
+    const buf = doc.getZip().generate({ type: 'nodebuffer', compression: 'DEFLATE' });
+    const safeFilename = `Ijin_Tempat_${item.nama_pemilik_lahan.replace(/[^a-zA-Z0-9]/g, '_')}.docx`;
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}"`);
+    res.setHeader('Content-Length', buf.length);
+    res.send(buf);
+  } catch (err) {
+    console.error('❌ Ijin Tempat DOCX Error:', err);
+    res.status(500).send('Gagal membuat dokumen. Periksa template.');
   }
 });
 
