@@ -41,7 +41,10 @@ async function initDatabase() {
       `CREATE TABLE IF NOT EXISTS rab_records (id INTEGER PRIMARY KEY AUTOINCREMENT, tahun TEXT NOT NULL, ss_code TEXT NOT NULL, ss_name TEXT NOT NULL, judul_kegiatan TEXT DEFAULT '', data_json TEXT NOT NULL, grand_total REAL NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, UNIQUE(tahun, ss_code))`,
       `CREATE TABLE IF NOT EXISTS ijin_keramaian (id INTEGER PRIMARY KEY AUTOINCREMENT, nomor_surat TEXT NOT NULL, nomor_ijin_keramaian TEXT, tanggal_surat TEXT NOT NULL, nama_pemohon TEXT NOT NULL, nik_pemohon TEXT NOT NULL, tempat_lahir_pemohon TEXT NOT NULL, tanggal_lahir_pemohon TEXT NOT NULL, jenis_kelamin_pemohon TEXT NOT NULL, agama_pemohon TEXT NOT NULL, kewarganegaraan_pemohon TEXT NOT NULL DEFAULT 'WNI', pekerjaan_pemohon TEXT NOT NULL, alamat_pemohon TEXT NOT NULL, nama_acara TEXT NOT NULL, jenis_acara TEXT, jumlah_pengunjung TEXT, hari_tanggal_acara TEXT NOT NULL, waktu_acara TEXT NOT NULL, lokasi_acara TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`,
       `CREATE TABLE IF NOT EXISTS ijin_tempat (id INTEGER PRIMARY KEY AUTOINCREMENT, tanggal_surat TEXT NOT NULL, nama_pemilik_lahan TEXT NOT NULL, nik_pemilik_lahan TEXT NOT NULL, tempat_lahir_pemilik_lahan TEXT NOT NULL, tanggal_lahir_pemilik_lahan TEXT NOT NULL, pekerjaan_pemilik_lahan TEXT NOT NULL, jabatan_pemilik_lahan TEXT, nama_acara TEXT NOT NULL, hari_tanggal_acara TEXT NOT NULL, waktu_acara TEXT NOT NULL, tempat_acara TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`,
-      `CREATE TABLE IF NOT EXISTS pengantar_nikah (id INTEGER PRIMARY KEY AUTOINCREMENT, nomor_surat TEXT NOT NULL, tanggal_pengajuan TEXT NOT NULL, nama_pemohon TEXT NOT NULL, nik_pemohon TEXT NOT NULL, jenis_kelamin_pemohon TEXT, tempat_lahir_pemohon TEXT, tanggal_lahir_pemohon TEXT, kewarganegaraan_pemohon TEXT DEFAULT 'WNI', agama_pemohon TEXT, pekerjaan_pemohon TEXT, alamat_pemohon TEXT, status_pemohon TEXT, status_wali_nasab TEXT, nama_ayah_pemohon TEXT, nik_ayah_pemohon TEXT, tempat_lahir_ayah_pemohon TEXT, tanggal_lahir_ayah_pemohon TEXT, kewarganegaraan_ayah_pemohon TEXT DEFAULT 'WNI', agama_ayah_pemohon TEXT, pekerjaan_ayah_pemohon TEXT, alamat_ayah_pemohon TEXT, nama_kakek_dari_ayah_pemohon TEXT, nama_ibu_pemohon TEXT, nik_ibu_pemohon TEXT, tempat_lahir_ibu_pemohon TEXT, tanggal_lahir_ibu_pemohon TEXT, kewarganegaraan_ibu_pemohon TEXT DEFAULT 'WNI', agama_ibu_pemohon TEXT, pekerjaan_ibu_pemohon TEXT, alamat_ibu_pemohon TEXT, nama_kakek_dari_ayah_ibu TEXT, nama_calon TEXT, nama_ayah_calon TEXT, nik_calon TEXT, tempat_lahir_calon TEXT, tanggal_lahir_calon TEXT, kewarganegaraan_calon TEXT DEFAULT 'WNI', agama_calon TEXT, pekerjaan_calon TEXT, alamat_calon TEXT, calon_pasangan_pemohon TEXT, hari_tanggal_nikah TEXT, jam_nikah TEXT, tempat_akad_nikah TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`
+      `CREATE TABLE IF NOT EXISTS pengantar_nikah (id INTEGER PRIMARY KEY AUTOINCREMENT, nomor_surat TEXT NOT NULL, tanggal_pengajuan TEXT NOT NULL, nama_pemohon TEXT NOT NULL, nik_pemohon TEXT NOT NULL, jenis_kelamin_pemohon TEXT, tempat_lahir_pemohon TEXT, tanggal_lahir_pemohon TEXT, kewarganegaraan_pemohon TEXT DEFAULT 'WNI', agama_pemohon TEXT, pekerjaan_pemohon TEXT, alamat_pemohon TEXT, status_pemohon TEXT, status_wali_nasab TEXT, nama_ayah_pemohon TEXT, nik_ayah_pemohon TEXT, tempat_lahir_ayah_pemohon TEXT, tanggal_lahir_ayah_pemohon TEXT, kewarganegaraan_ayah_pemohon TEXT DEFAULT 'WNI', agama_ayah_pemohon TEXT, pekerjaan_ayah_pemohon TEXT, alamat_ayah_pemohon TEXT, nama_kakek_dari_ayah_pemohon TEXT, nama_ibu_pemohon TEXT, nik_ibu_pemohon TEXT, tempat_lahir_ibu_pemohon TEXT, tanggal_lahir_ibu_pemohon TEXT, kewarganegaraan_ibu_pemohon TEXT DEFAULT 'WNI', agama_ibu_pemohon TEXT, pekerjaan_ibu_pemohon TEXT, alamat_ibu_pemohon TEXT, nama_kakek_dari_ayah_ibu TEXT, nama_calon TEXT, nama_ayah_calon TEXT, nik_calon TEXT, tempat_lahir_calon TEXT, tanggal_lahir_calon TEXT, kewarganegaraan_calon TEXT DEFAULT 'WNI', agama_calon TEXT, pekerjaan_calon TEXT, alamat_calon TEXT, calon_pasangan_pemohon TEXT, hari_tanggal_nikah TEXT, jam_nikah TEXT, tempat_akad_nikah TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`,
+      `CREATE TABLE IF NOT EXISTS rab_bidang (id INTEGER PRIMARY KEY AUTOINCREMENT, no TEXT, nama_bidang TEXT)`,
+      `CREATE TABLE IF NOT EXISTS rab_sub_bidang (id INTEGER PRIMARY KEY AUTOINCREMENT, bidang_id INTEGER, no TEXT, nama_sub_bidang TEXT)`,
+      `CREATE TABLE IF NOT EXISTS rab_sub_sub_bidang (id INTEGER PRIMARY KEY AUTOINCREMENT, sub_bidang_id INTEGER, no TEXT, nama_ss_bidang TEXT)`
     ];
 
     for (const sql of tables) {
@@ -245,60 +248,180 @@ app.use(session({
 // API ROUTES
 // ============================================================
 
-// ── RAB: Read Excel ──
+// ── RAB: Read Hierarchy from DB ──
 app.get('/api/rab', (req, res) => {
   if (!req.session.userId) return res.status(401).json({ success: false, message: 'Belum login.' });
 
   try {
-    const bidangPath = path.join(__dirname, 'templates', 'daftar_bidang.xlsx');
-    const hierarchyPath = path.join(__dirname, 'templates', 'daftar_sub__sub_bidang.xlsx');
-
+    const bidangResult = db.exec('SELECT id, no, nama_bidang FROM rab_bidang ORDER BY id ASC');
     let bidangData = [];
-    if (fs.existsSync(bidangPath)) {
-      const wb = XLSX.readFile(bidangPath);
-      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 });
-      bidangData = rows
-        .filter(r => r[1]) // only rows with a bidang name
-        .map(r => ({ no: r[0], nama_bidang: r[1] }));
+    if (bidangResult.length > 0) {
+      bidangData = bidangResult[0].values.map(r => ({ id: r[0], no: r[1], nama_bidang: r[2] }));
     }
 
+    const subResult = db.exec('SELECT bidang_id, id, no, nama_sub_bidang FROM rab_sub_bidang ORDER BY bidang_id, id ASC');
+    const ssResult = db.exec('SELECT sub_bidang_id, id, no, nama_ss_bidang FROM rab_sub_sub_bidang ORDER BY sub_bidang_id, id ASC');
+
     let hierarchy = {};
-    if (fs.existsSync(hierarchyPath)) {
-      const wb = XLSX.readFile(hierarchyPath);
-      const sheet = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+    if (subResult.length > 0) {
+      subResult[0].values.forEach(([bId, sbId, sbNo, sbName]) => {
+        if (!hierarchy[bId]) hierarchy[bId] = {};
+        if (!hierarchy[bId][sbId]) hierarchy[bId][sbId] = { name: sbName, no: sbNo, items: [] };
+      });
+    }
 
-      if (rows.length >= 2) {
-        const bidangHeaders = rows[0];
-        const subBidangHeaders = rows[1];
-
-        bidangHeaders.forEach((bidangName, colIndex) => {
-          if (!bidangName) return;
-
-          if (!hierarchy[bidangName]) hierarchy[bidangName] = {};
-
-          const subBidangName = subBidangHeaders[colIndex];
-          if (!subBidangName) return;
-
-          if (!hierarchy[bidangName][subBidangName]) {
-            hierarchy[bidangName][subBidangName] = [];
+    if (ssResult.length > 0) {
+      ssResult[0].values.forEach(([sbId, ssId, ssNo, ssName]) => {
+        // Find which bidang this subId belongs to
+        let foundBidangId = null;
+        for (const bId in hierarchy) {
+          if (hierarchy[bId][sbId]) {
+            foundBidangId = bId;
+            break;
           }
-
-          // Collect sub-sub bidang from row 2 onwards
-          for (let i = 2; i < rows.length; i++) {
-            const val = rows[i][colIndex];
-            if (val) {
-              hierarchy[bidangName][subBidangName].push(val);
-            }
-          }
-        });
-      }
+        }
+        
+        if (foundBidangId && hierarchy[foundBidangId][sbId]) {
+          hierarchy[foundBidangId][sbId].items.push({ 
+            id: ssId, 
+            no: ssNo || '', 
+            name: ssName || '',
+            subId: sbId 
+          });
+        }
+      });
     }
 
     res.json({ success: true, bidang: bidangData, hierarchy: hierarchy });
   } catch (err) {
-    console.error('Error reading RAB Excel:', err);
-    res.status(500).json({ success: false, message: 'Gagal membaca file Excel RAB.' });
+    console.error('Error reading RAB Hierarchy from DB:', err);
+    res.status(500).json({ success: false, message: 'Gagal mengambil data hierarki RAB.' });
+  }
+});
+
+// ── RAB: Hierarchy CRUD Endpoints ──
+
+// Add Bidang
+app.post('/api/rab/hierarchy/bidang', (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ success: false, message: 'Belum login.' });
+  const { no, name } = req.body;
+  try {
+    db.run('INSERT INTO rab_bidang (no, nama_bidang) VALUES (?, ?)', [no, name]);
+    saveDatabase();
+    res.json({ success: true, message: 'Bidang berhasil ditambahkan.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Edit Bidang
+app.put('/api/rab/hierarchy/bidang/:id', (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ success: false, message: 'Belum login.' });
+  const { id } = req.params;
+  const { no, name } = req.body;
+  try {
+    db.run('UPDATE rab_bidang SET no = ?, nama_bidang = ? WHERE id = ?', [no, name, id]);
+    saveDatabase();
+    res.json({ success: true, message: 'Bidang berhasil diupdate.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Delete Bidang
+app.delete('/api/rab/hierarchy/bidang/:id', (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ success: false, message: 'Belum login.' });
+  const { id } = req.params;
+  try {
+    // Delete children first
+    db.run('DELETE FROM rab_sub_sub_bidang WHERE sub_bidang_id IN (SELECT id FROM rab_sub_bidang WHERE bidang_id = ?)', [id]);
+    db.run('DELETE FROM rab_sub_bidang WHERE bidang_id = ?', [id]);
+    db.run('DELETE FROM rab_bidang WHERE id = ?', [id]);
+    saveDatabase();
+    res.json({ success: true, message: 'Bidang dan seluruh turunannya berhasil dihapus.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Add Sub Bidang
+app.post('/api/rab/hierarchy/sub-bidang', (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ success: false, message: 'Belum login.' });
+  const { bidang_id, no, name } = req.body;
+  try {
+    db.run('INSERT INTO rab_sub_bidang (bidang_id, no, nama_sub_bidang) VALUES (?, ?, ?)', [bidang_id, no, name]);
+    saveDatabase();
+    res.json({ success: true, message: 'Sub Bidang berhasil ditambahkan.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Edit Sub Bidang
+app.put('/api/rab/hierarchy/sub-bidang/:id', (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ success: false, message: 'Belum login.' });
+  const { id } = req.params;
+  const { no, name } = req.body;
+  try {
+    db.run('UPDATE rab_sub_bidang SET no = ?, nama_sub_bidang = ? WHERE id = ?', [no, name, id]);
+    saveDatabase();
+    res.json({ success: true, message: 'Sub Bidang berhasil diupdate.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Delete Sub Bidang
+app.delete('/api/rab/hierarchy/sub-bidang/:id', (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ success: false, message: 'Belum login.' });
+  const { id } = req.params;
+  try {
+    db.run('DELETE FROM rab_sub_sub_bidang WHERE sub_bidang_id = ?', [id]);
+    db.run('DELETE FROM rab_sub_bidang WHERE id = ?', [id]);
+    saveDatabase();
+    res.json({ success: true, message: 'Sub Bidang berhasil dihapus.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Add Sub-Sub Bidang (Kegiatan)
+app.post('/api/rab/hierarchy/ss-bidang', (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ success: false, message: 'Belum login.' });
+  const { sub_bidang_id, no, name } = req.body;
+  try {
+    db.run('INSERT INTO rab_sub_sub_bidang (sub_bidang_id, no, nama_ss_bidang) VALUES (?, ?, ?)', [sub_bidang_id, no, name]);
+    saveDatabase();
+    res.json({ success: true, message: 'Kegiatan berhasil ditambahkan.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Edit Sub-Sub Bidang
+app.put('/api/rab/hierarchy/ss-bidang/:id', (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ success: false, message: 'Belum login.' });
+  const { id } = req.params;
+  const { no, name } = req.body;
+  try {
+    db.run('UPDATE rab_sub_sub_bidang SET no = ?, nama_ss_bidang = ? WHERE id = ?', [no, name, id]);
+    saveDatabase();
+    res.json({ success: true, message: 'Kegiatan berhasil diupdate.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Delete Sub-Sub Bidang
+app.delete('/api/rab/hierarchy/ss-bidang/:id', (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ success: false, message: 'Belum login.' });
+  const { id } = req.params;
+  try {
+    db.run('DELETE FROM rab_sub_sub_bidang WHERE id = ?', [id]);
+    saveDatabase();
+    res.json({ success: true, message: 'Kegiatan berhasil dihapus.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
