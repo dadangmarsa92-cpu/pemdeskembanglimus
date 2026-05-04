@@ -40,7 +40,8 @@ async function initDatabase() {
       `CREATE TABLE IF NOT EXISTS surat_ahli_waris (id INTEGER PRIMARY KEY AUTOINCREMENT, nomor_surat TEXT NOT NULL, tanggal_surat TEXT NOT NULL, nama_pewaris TEXT NOT NULL, tempat_lahir_pewaris TEXT NOT NULL, tgl_lahir_pewaris TEXT NOT NULL, tgl_meninggal TEXT NOT NULL, alamat_pewaris TEXT NOT NULL, nama_ahli_waris TEXT NOT NULL, hubungan TEXT NOT NULL, nik_ahli_waris TEXT NOT NULL, alamat_ahli_waris TEXT NOT NULL, keterangan TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`,
       `CREATE TABLE IF NOT EXISTS rab_records (id INTEGER PRIMARY KEY AUTOINCREMENT, tahun TEXT NOT NULL, ss_code TEXT NOT NULL, ss_name TEXT NOT NULL, judul_kegiatan TEXT DEFAULT '', data_json TEXT NOT NULL, grand_total REAL NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, UNIQUE(tahun, ss_code))`,
       `CREATE TABLE IF NOT EXISTS ijin_keramaian (id INTEGER PRIMARY KEY AUTOINCREMENT, nomor_surat TEXT NOT NULL, nomor_ijin_keramaian TEXT, tanggal_surat TEXT NOT NULL, nama_pemohon TEXT NOT NULL, nik_pemohon TEXT NOT NULL, tempat_lahir_pemohon TEXT NOT NULL, tanggal_lahir_pemohon TEXT NOT NULL, jenis_kelamin_pemohon TEXT NOT NULL, agama_pemohon TEXT NOT NULL, kewarganegaraan_pemohon TEXT NOT NULL DEFAULT 'WNI', pekerjaan_pemohon TEXT NOT NULL, alamat_pemohon TEXT NOT NULL, nama_acara TEXT NOT NULL, jenis_acara TEXT, jumlah_pengunjung TEXT, hari_tanggal_acara TEXT NOT NULL, waktu_acara TEXT NOT NULL, lokasi_acara TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`,
-      `CREATE TABLE IF NOT EXISTS ijin_tempat (id INTEGER PRIMARY KEY AUTOINCREMENT, tanggal_surat TEXT NOT NULL, nama_pemilik_lahan TEXT NOT NULL, nik_pemilik_lahan TEXT NOT NULL, tempat_lahir_pemilik_lahan TEXT NOT NULL, tanggal_lahir_pemilik_lahan TEXT NOT NULL, pekerjaan_pemilik_lahan TEXT NOT NULL, jabatan_pemilik_lahan TEXT, nama_acara TEXT NOT NULL, hari_tanggal_acara TEXT NOT NULL, waktu_acara TEXT NOT NULL, tempat_acara TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`
+      `CREATE TABLE IF NOT EXISTS ijin_tempat (id INTEGER PRIMARY KEY AUTOINCREMENT, tanggal_surat TEXT NOT NULL, nama_pemilik_lahan TEXT NOT NULL, nik_pemilik_lahan TEXT NOT NULL, tempat_lahir_pemilik_lahan TEXT NOT NULL, tanggal_lahir_pemilik_lahan TEXT NOT NULL, pekerjaan_pemilik_lahan TEXT NOT NULL, jabatan_pemilik_lahan TEXT, nama_acara TEXT NOT NULL, hari_tanggal_acara TEXT NOT NULL, waktu_acara TEXT NOT NULL, tempat_acara TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`,
+      `CREATE TABLE IF NOT EXISTS pengantar_nikah (id INTEGER PRIMARY KEY AUTOINCREMENT, nomor_surat TEXT NOT NULL, tanggal_pengajuan TEXT NOT NULL, nama_pemohon TEXT NOT NULL, nik_pemohon TEXT NOT NULL, jenis_kelamin_pemohon TEXT, tempat_lahir_pemohon TEXT, tanggal_lahir_pemohon TEXT, kewarganegaraan_pemohon TEXT DEFAULT 'WNI', agama_pemohon TEXT, pekerjaan_pemohon TEXT, alamat_pemohon TEXT, status_pemohon TEXT, status_wali_nasab TEXT, nama_ayah_pemohon TEXT, nik_ayah_pemohon TEXT, tempat_lahir_ayah_pemohon TEXT, tanggal_lahir_ayah_pemohon TEXT, kewarganegaraan_ayah_pemohon TEXT DEFAULT 'WNI', agama_ayah_pemohon TEXT, pekerjaan_ayah_pemohon TEXT, alamat_ayah_pemohon TEXT, nama_kakek_dari_ayah_pemohon TEXT, nama_ibu_pemohon TEXT, nik_ibu_pemohon TEXT, tempat_lahir_ibu_pemohon TEXT, tanggal_lahir_ibu_pemohon TEXT, kewarganegaraan_ibu_pemohon TEXT DEFAULT 'WNI', agama_ibu_pemohon TEXT, pekerjaan_ibu_pemohon TEXT, alamat_ibu_pemohon TEXT, nama_kakek_dari_ayah_ibu TEXT, nama_calon TEXT, nama_ayah_calon TEXT, nik_calon TEXT, tempat_lahir_calon TEXT, tanggal_lahir_calon TEXT, kewarganegaraan_calon TEXT DEFAULT 'WNI', agama_calon TEXT, pekerjaan_calon TEXT, alamat_calon TEXT, calon_pasangan_pemohon TEXT, hari_tanggal_nikah TEXT, jam_nikah TEXT, tempat_akad_nikah TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`
     ];
 
     for (const sql of tables) {
@@ -187,6 +188,22 @@ function generateNextIjinKeramaianNumber() {
 
   const countResult = db.exec(
     `SELECT COUNT(*) FROM ijin_keramaian WHERE nomor_surat LIKE '%/${tahun}'`
+  );
+  const count = countResult.length > 0 ? countResult[0].values[0][0] : 0;
+  const urutan = String(parseInt(count) + 1).padStart(3, '0');
+
+  return `${kode_surat}/${urutan}/${kode_desa}/${tahun}`;
+}
+
+// Helper: generate next Pengantar Nikah number
+function generateNextPengantarNikahNumber() {
+  const settings = getSettings();
+  const kode_surat = settings.kode_surat_pengantar_nikah || '472.21';
+  const kode_desa = settings.kode_desa || '18';
+  const tahun = settings.tahun || new Date().getFullYear().toString();
+
+  const countResult = db.exec(
+    `SELECT COUNT(*) FROM pengantar_nikah WHERE nomor_surat LIKE '%/${tahun}'`
   );
   const count = countResult.length > 0 ? countResult[0].values[0][0] : 0;
   const urutan = String(parseInt(count) + 1).padStart(3, '0');
@@ -1910,8 +1927,11 @@ app.get('/api/ijin-tempat/generate-docx/:id', (req, res) => {
       pekerjaan_pemilik_lahan:       item.pekerjaan_pemilik_lahan || '',
       jabatan_pemilik_lahan:         item.jabatan_pemilik_lahan || '-',
       alamat_pemilik_lahan:          item.alamat_pemilik_lahan || '',
+      alamat_pemilik:                item.alamat_pemilik_lahan || '',
+      alamat:                        item.alamat_pemilik_lahan || '',
       nama_acara:                    item.nama_acara,
-      hari_tangga_acara:             item.hari_tanggal_acara,  // typo di template: hari_tangga_acara
+      hari_tangga_acara:             item.hari_tanggal_acara,  // typo di template
+      hari_tanggal_acara:            item.hari_tanggal_acara,  // fix typo di template
       waktu_acara:                   item.waktu_acara,
       tempat_acara:                  item.tempat_acara,
       tanggal_hari_ini:              formatDateID(item.tanggal_surat),
@@ -1929,6 +1949,185 @@ app.get('/api/ijin-tempat/generate-docx/:id', (req, res) => {
     res.send(buf);
   } catch (err) {
     console.error('❌ Ijin Tempat DOCX Error:', err);
+    res.status(500).send('Gagal membuat dokumen. Periksa template.');
+  }
+});
+
+// ============================================================
+// PENGANTAR NIKAH API ROUTES
+// ============================================================
+
+// Get next nomor
+app.get('/api/pengantar-nikah/next-number', (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ success: false, message: 'Belum login.' });
+  res.json({ success: true, nomor: generateNextPengantarNikahNumber() });
+});
+
+// Get all
+app.get('/api/pengantar-nikah', (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ success: false, message: 'Belum login.' });
+  const result = db.exec('SELECT * FROM pengantar_nikah ORDER BY id DESC');
+  const items = [];
+  if (result.length > 0) {
+    const columns = result[0].columns;
+    result[0].values.forEach(row => {
+      const obj = {};
+      columns.forEach((col, i) => { obj[col] = row[i]; });
+      items.push(obj);
+    });
+  }
+  res.json({ success: true, data: items });
+});
+
+// Get single
+app.get('/api/pengantar-nikah/:id', (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ success: false, message: 'Belum login.' });
+  const stmt = db.prepare('SELECT * FROM pengantar_nikah WHERE id = ?');
+  stmt.bind([parseInt(req.params.id)]);
+  let item = null;
+  if (stmt.step()) item = stmt.getAsObject();
+  stmt.free();
+  if (!item) return res.status(404).json({ success: false, message: 'Data tidak ditemukan.' });
+  res.json({ success: true, data: item });
+});
+
+// Create
+app.post('/api/pengantar-nikah', (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ success: false, message: 'Belum login.' });
+  const b = req.body;
+  if (!b.nomor_surat || !b.tanggal_pengajuan || !b.nama_pemohon || !b.nik_pemohon) {
+    return res.status(400).json({ success: false, message: 'Field wajib belum lengkap.' });
+  }
+  try {
+    db.run(
+      `INSERT INTO pengantar_nikah (nomor_surat, tanggal_pengajuan, nama_pemohon, nik_pemohon, jenis_kelamin_pemohon, tempat_lahir_pemohon, tanggal_lahir_pemohon, kewarganegaraan_pemohon, agama_pemohon, pekerjaan_pemohon, alamat_pemohon, status_pemohon, status_wali_nasab, nama_ayah_pemohon, nik_ayah_pemohon, tempat_lahir_ayah_pemohon, tanggal_lahir_ayah_pemohon, kewarganegaraan_ayah_pemohon, agama_ayah_pemohon, pekerjaan_ayah_pemohon, alamat_ayah_pemohon, nama_kakek_dari_ayah_pemohon, nama_ibu_pemohon, nik_ibu_pemohon, tempat_lahir_ibu_pemohon, tanggal_lahir_ibu_pemohon, kewarganegaraan_ibu_pemohon, agama_ibu_pemohon, pekerjaan_ibu_pemohon, alamat_ibu_pemohon, nama_kakek_dari_ayah_ibu, nama_calon, nama_ayah_calon, nik_calon, tempat_lahir_calon, tanggal_lahir_calon, kewarganegaraan_calon, agama_calon, pekerjaan_calon, alamat_calon, calon_pasangan_pemohon, hari_tanggal_nikah, jam_nikah, tempat_akad_nikah) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      [b.nomor_surat, b.tanggal_pengajuan, b.nama_pemohon, b.nik_pemohon, b.jenis_kelamin_pemohon||'', b.tempat_lahir_pemohon||'', b.tanggal_lahir_pemohon||'', b.kewarganegaraan_pemohon||'WNI', b.agama_pemohon||'', b.pekerjaan_pemohon||'', b.alamat_pemohon||'', b.status_pemohon||'', b.status_wali_nasab||'', b.nama_ayah_pemohon||'', b.nik_ayah_pemohon||'', b.tempat_lahir_ayah_pemohon||'', b.tanggal_lahir_ayah_pemohon||'', b.kewarganegaraan_ayah_pemohon||'WNI', b.agama_ayah_pemohon||'', b.pekerjaan_ayah_pemohon||'', b.alamat_ayah_pemohon||'', b.nama_kakek_dari_ayah_pemohon||'', b.nama_ibu_pemohon||'', b.nik_ibu_pemohon||'', b.tempat_lahir_ibu_pemohon||'', b.tanggal_lahir_ibu_pemohon||'', b.kewarganegaraan_ibu_pemohon||'WNI', b.agama_ibu_pemohon||'', b.pekerjaan_ibu_pemohon||'', b.alamat_ibu_pemohon||'', b.nama_kakek_dari_ayah_ibu||'', b.nama_calon||'', b.nama_ayah_calon||'', b.nik_calon||'', b.tempat_lahir_calon||'', b.tanggal_lahir_calon||'', b.kewarganegaraan_calon||'WNI', b.agama_calon||'', b.pekerjaan_calon||'', b.alamat_calon||'', b.calon_pasangan_pemohon||'', b.hari_tanggal_nikah||'', b.jam_nikah||'', b.tempat_akad_nikah||'']
+    );
+    saveDatabase();
+    const lastId = db.exec('SELECT last_insert_rowid() as id');
+    const id = lastId[0].values[0][0];
+    res.json({ success: true, message: 'Data Pengantar Nikah berhasil disimpan.', id });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Gagal menyimpan.', error: err.message });
+  }
+});
+
+// Update
+app.put('/api/pengantar-nikah/:id', (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ success: false, message: 'Belum login.' });
+  const b = req.body;
+  try {
+    db.run(
+      `UPDATE pengantar_nikah SET nomor_surat=?, tanggal_pengajuan=?, nama_pemohon=?, nik_pemohon=?, jenis_kelamin_pemohon=?, tempat_lahir_pemohon=?, tanggal_lahir_pemohon=?, kewarganegaraan_pemohon=?, agama_pemohon=?, pekerjaan_pemohon=?, alamat_pemohon=?, status_pemohon=?, status_wali_nasab=?, nama_ayah_pemohon=?, nik_ayah_pemohon=?, tempat_lahir_ayah_pemohon=?, tanggal_lahir_ayah_pemohon=?, kewarganegaraan_ayah_pemohon=?, agama_ayah_pemohon=?, pekerjaan_ayah_pemohon=?, alamat_ayah_pemohon=?, nama_kakek_dari_ayah_pemohon=?, nama_ibu_pemohon=?, nik_ibu_pemohon=?, tempat_lahir_ibu_pemohon=?, tanggal_lahir_ibu_pemohon=?, kewarganegaraan_ibu_pemohon=?, agama_ibu_pemohon=?, pekerjaan_ibu_pemohon=?, alamat_ibu_pemohon=?, nama_kakek_dari_ayah_ibu=?, nama_calon=?, nama_ayah_calon=?, nik_calon=?, tempat_lahir_calon=?, tanggal_lahir_calon=?, kewarganegaraan_calon=?, agama_calon=?, pekerjaan_calon=?, alamat_calon=?, calon_pasangan_pemohon=?, hari_tanggal_nikah=?, jam_nikah=?, tempat_akad_nikah=? WHERE id=?`,
+      [b.nomor_surat, b.tanggal_pengajuan, b.nama_pemohon, b.nik_pemohon, b.jenis_kelamin_pemohon||'', b.tempat_lahir_pemohon||'', b.tanggal_lahir_pemohon||'', b.kewarganegaraan_pemohon||'WNI', b.agama_pemohon||'', b.pekerjaan_pemohon||'', b.alamat_pemohon||'', b.status_pemohon||'', b.status_wali_nasab||'', b.nama_ayah_pemohon||'', b.nik_ayah_pemohon||'', b.tempat_lahir_ayah_pemohon||'', b.tanggal_lahir_ayah_pemohon||'', b.kewarganegaraan_ayah_pemohon||'WNI', b.agama_ayah_pemohon||'', b.pekerjaan_ayah_pemohon||'', b.alamat_ayah_pemohon||'', b.nama_kakek_dari_ayah_pemohon||'', b.nama_ibu_pemohon||'', b.nik_ibu_pemohon||'', b.tempat_lahir_ibu_pemohon||'', b.tanggal_lahir_ibu_pemohon||'', b.kewarganegaraan_ibu_pemohon||'WNI', b.agama_ibu_pemohon||'', b.pekerjaan_ibu_pemohon||'', b.alamat_ibu_pemohon||'', b.nama_kakek_dari_ayah_ibu||'', b.nama_calon||'', b.nama_ayah_calon||'', b.nik_calon||'', b.tempat_lahir_calon||'', b.tanggal_lahir_calon||'', b.kewarganegaraan_calon||'WNI', b.agama_calon||'', b.pekerjaan_calon||'', b.alamat_calon||'', b.calon_pasangan_pemohon||'', b.hari_tanggal_nikah||'', b.jam_nikah||'', b.tempat_akad_nikah||'', req.params.id]
+    );
+    saveDatabase();
+    res.json({ success: true, message: 'Data Pengantar Nikah berhasil diperbarui.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Gagal memperbarui.', error: err.message });
+  }
+});
+
+// Delete
+app.delete('/api/pengantar-nikah/:id', (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ success: false, message: 'Belum login.' });
+  try {
+    db.run('DELETE FROM pengantar_nikah WHERE id = ?', [req.params.id]);
+    saveDatabase();
+    res.json({ success: true, message: 'Data Pengantar Nikah berhasil dihapus.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Gagal menghapus.', error: err.message });
+  }
+});
+
+// Generate DOCX
+app.get('/api/pengantar-nikah/generate-docx/:id', (req, res) => {
+  if (!req.session.userId) return res.status(401).send('Belum login.');
+  const templatePath = path.join(__dirname, 'templates', 'pengantar_nikah_template.docx');
+  if (!fs.existsSync(templatePath)) return res.status(404).send('Template pengantar_nikah_template.docx tidak ditemukan.');
+  try {
+    const stmt = db.prepare('SELECT * FROM pengantar_nikah WHERE id = ?');
+    stmt.bind([parseInt(req.params.id)]);
+    let item = null;
+    if (stmt.step()) item = stmt.getAsObject();
+    stmt.free();
+    if (!item) return res.status(404).send('Data tidak ditemukan.');
+    const settings = getSettings();
+
+    // Determine status_laki_laki & status_perempuan based on jenis_kelamin + status
+    let status_laki_laki = '';
+    let status_perempuan = '';
+    if (item.jenis_kelamin_pemohon === 'Laki-laki') {
+      status_laki_laki = item.status_pemohon || '';
+    } else {
+      status_perempuan = item.status_pemohon || '';
+    }
+
+    const templateData = {
+      nomor_surat:                   item.nomor_surat,
+      tanggal_pengajuan:             formatDateID(item.tanggal_pengajuan),
+      nama_pemohon:                  item.nama_pemohon,
+      nik_pemohon:                   item.nik_pemohon,
+      jenis_kelamin_pemohon:         item.jenis_kelamin_pemohon || '',
+      'tempat_lahir pemohon':        item.tempat_lahir_pemohon || '',
+      tempat_lahir_pemohon:          item.tempat_lahir_pemohon || '',
+      tanggal_lahir_pemohon:         item.tanggal_lahir_pemohon ? formatDateID(item.tanggal_lahir_pemohon) : '',
+      kewarganegaraan_pemohon:       item.kewarganegaraan_pemohon || 'WNI',
+      agama_pemohon:                 item.agama_pemohon || '',
+      pekerjaan_pemohon:             item.pekerjaan_pemohon || '',
+      alamat_pemohon:                item.alamat_pemohon || '',
+      status_laki_laki:              status_laki_laki,
+      status_perempuan:              status_perempuan,
+      status_wali_nasab:             item.status_wali_nasab || '',
+      nama_ayah_pemohon:             item.nama_ayah_pemohon || '',
+      nik_ayah_pemohon:              item.nik_ayah_pemohon || '',
+      tempat_lahir_ayah_pemohon:     item.tempat_lahir_ayah_pemohon || '',
+      tanggal_lahir_ayah_pemohon:    item.tanggal_lahir_ayah_pemohon ? formatDateID(item.tanggal_lahir_ayah_pemohon) : '',
+      kewarganegaraan_ayah_pemohon:  item.kewarganegaraan_ayah_pemohon || 'WNI',
+      agama_ayah_pemohon:            item.agama_ayah_pemohon || '',
+      pekerjaan_ayah_pemohon:        item.pekerjaan_ayah_pemohon || '',
+      alamat_ayah_pemohon:           item.alamat_ayah_pemohon || '',
+      nama_kakek_dari_ayah_pemohon:  item.nama_kakek_dari_ayah_pemohon || '',
+      nama_ibu_pemohon:              item.nama_ibu_pemohon || '',
+      nik_ibu_pemohon:               item.nik_ibu_pemohon || '',
+      tempat_lahir_ibu_pemohon:      item.tempat_lahir_ibu_pemohon || '',
+      tanggal_lahir_ibu_pemohon:     item.tanggal_lahir_ibu_pemohon ? formatDateID(item.tanggal_lahir_ibu_pemohon) : '',
+      kewarganegaraan_ibu_pemohon:   item.kewarganegaraan_ibu_pemohon || 'WNI',
+      agama_ibu_pemohon:             item.agama_ibu_pemohon || '',
+      pekerjaan_ibu_pemohon:         item.pekerjaan_ibu_pemohon || '',
+      alamat_ibu_pemohon:            item.alamat_ibu_pemohon || '',
+      nama_kakek_dari_ayah_ibu:      item.nama_kakek_dari_ayah_ibu || '',
+      nama_calon:                    item.nama_calon || '',
+      nam_calon:                     item.nama_calon || '',
+      nama_ayah_calon:               item.nama_ayah_calon || '',
+      nik_calon:                     item.nik_calon || '',
+      tempat_lahir_calon:            item.tempat_lahir_calon || '',
+      tanggal_lahir_calon:           item.tanggal_lahir_calon ? formatDateID(item.tanggal_lahir_calon) : '',
+      kewarganegaraan_calon:         item.kewarganegaraan_calon || 'WNI',
+      agama_calon:                   item.agama_calon || '',
+      pekerjaan_calon:               item.pekerjaan_calon || '',
+      alamat_calon:                  item.alamat_calon || '',
+      calon_pasangan_pemohon:        item.calon_pasangan_pemohon || '',
+      hari_tanggal_nikah:            item.hari_tanggal_nikah || '',
+      jam_nikah:                     item.jam_nikah || '',
+      tempat_akad_nikah:             item.tempat_akad_nikah || '',
+      nama_desa:                     settings.nama_desa || 'Kembanglimus',
+      nama_kecamatan:                settings.nama_kecamatan || 'Borobudur',
+      nama_kabupaten:                settings.nama_kabupaten || 'Magelang',
+      kepala_desa:                   settings.kepala_desa || 'SOETJI ARIMBI',
+    };
+    const content = fs.readFileSync(templatePath);
+    const zip = new PizZip(content);
+    const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
+    doc.render(templateData);
+    const buf = doc.getZip().generate({ type: 'nodebuffer', compression: 'DEFLATE' });
+    const safeFilename = `Pengantar_Nikah_${item.nama_pemohon.replace(/[^a-zA-Z0-9]/g, '_')}.docx`;
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}"`);
+    res.setHeader('Content-Length', buf.length);
+    res.send(buf);
+  } catch (err) {
+    console.error('❌ Pengantar Nikah DOCX Error:', err);
     res.status(500).send('Gagal membuat dokumen. Periksa template.');
   }
 });

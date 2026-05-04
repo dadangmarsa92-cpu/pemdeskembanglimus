@@ -165,6 +165,14 @@
             </ul>
           </li>
 
+          <li>
+            <a href="#" class="sidebar-link" data-page="pengantar-nikah">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+              </svg>
+              <span>Pengantar Nikah</span>
+            </a>
+          </li>
           <li class="sidebar-section-label">Lainnya</li>
           <li>
             <a href="#" class="sidebar-link" data-page="laporan">
@@ -1383,6 +1391,7 @@
                       <th>No</th>
                       <th>Nama Pemilik Lahan</th>
                       <th>NIK</th>
+                      <th>Alamat Pemilik</th>
                       <th>Nama Acara</th>
                       <th>Hari/Tanggal Acara</th>
                       <th>Tempat Acara</th>
@@ -1399,6 +1408,494 @@
                 <h3>Belum Ada Data Ijin Tempat</h3>
                 <p>Data yang tersimpan akan muncul di daftar ini.</p>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══════════════ PAGE: PENGANTAR NIKAH ═══════════════ -->
+        <div class="page-section" id="page-pengantar-nikah">
+          <div class="page-header-section">
+            <div>
+              <h1>💍 Pengantar Nikah</h1>
+              <p>Kelola surat pengantar nikah dan cetak dokumen</p>
+            </div>
+          </div>
+
+          <!-- Quick Stats -->
+          <div class="stats-grid" style="margin-bottom:28px;">
+            <div class="stat-card">
+              <div class="stat-icon blue">💍</div>
+              <div class="stat-value" id="statPengantarNikahTotal">0</div>
+              <div class="stat-label">Total Pengantar Nikah</div>
+            </div>
+          </div>
+
+          <!-- Form Input -->
+          <div class="form-card" id="pengantarNikahFormCard" style="margin-bottom:28px;">
+            <div class="form-card-title" id="pengantarNikahFormTitle">📝 Input Data Pengantar Nikah</div>
+            <form id="pengantarNikahForm">
+              <input type="hidden" id="pengantarNikahEditId" value="">
+
+              <!-- BAGIAN 1: DATA PEMOHON -->
+              <h3 style="margin:8px 0 16px; color:var(--primary); font-size:1rem; border-bottom:2px solid var(--primary); padding-bottom:8px;">📋 Data Pemohon</h3>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="pnNomor">
+                    Nomor Surat
+                    <span class="nomor-auto-badge">✨ Auto</span>
+                  </label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">🔢</span>
+                    <input type="text" id="pnNomor" class="form-input" placeholder="Memuat nomor otomatis..." readonly style="opacity:0.8; cursor:not-allowed;">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="pnTanggalPengajuan">Tanggal Pengajuan</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">📅</span>
+                    <input type="text" id="pnTanggalPengajuan" class="form-input" placeholder="dd/mm/yyyy">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="pnNamaPemohon">Nama Pemohon</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">👤</span>
+                    <input type="text" id="pnNamaPemohon" class="form-input" placeholder="Nama Lengkap Pemohon">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="pnNIKPemohon">NIK Pemohon</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">🆔</span>
+                    <input type="text" id="pnNIKPemohon" class="form-input" placeholder="16 digit NIK" maxlength="16">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="pnJenisKelaminPemohon">Jenis Kelamin</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">⚥</span>
+                    <select id="pnJenisKelaminPemohon" class="form-input" style="padding-left:48px;">
+                      <option value="" disabled selected>Pilih Jenis Kelamin...</option>
+                      <option value="Laki-laki">Laki-laki</option>
+                      <option value="Perempuan">Perempuan</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="pnTempatLahirPemohon">Tempat Lahir</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">📍</span>
+                    <input type="text" id="pnTempatLahirPemohon" class="form-input" placeholder="Tempat Lahir Pemohon">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="pnTanggalLahirPemohon">Tanggal Lahir</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">📅</span>
+                    <input type="text" id="pnTanggalLahirPemohon" class="form-input" placeholder="dd/mm/yyyy">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="pnKewarganegaraanPemohon">Kewarganegaraan</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">🌍</span>
+                    <input type="text" id="pnKewarganegaraanPemohon" class="form-input" placeholder="WNI" value="WNI">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="pnAgamaPemohon">Agama</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">🕌</span>
+                    <select id="pnAgamaPemohon" class="form-input" style="padding-left:48px;">
+                      <option value="" disabled selected>Pilih Agama...</option>
+                      <option value="Islam">Islam</option>
+                      <option value="Kristen">Kristen</option>
+                      <option value="Katolik">Katolik</option>
+                      <option value="Hindu">Hindu</option>
+                      <option value="Buddha">Buddha</option>
+                      <option value="Konghucu">Konghucu</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="pnPekerjaanPemohon">Pekerjaan</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">💼</span>
+                    <input type="text" id="pnPekerjaanPemohon" class="form-input" placeholder="Pekerjaan Pemohon">
+                  </div>
+                </div>
+
+                <div class="form-group" style="grid-column: span 2;">
+                  <label for="pnAlamatPemohon">Alamat Pemohon</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">🏠</span>
+                    <input type="text" id="pnAlamatPemohon" class="form-input" placeholder="Alamat Lengkap Pemohon">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="pnStatusPemohon">Status Perkawinan Pemohon</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">💒</span>
+                    <select id="pnStatusPemohon" class="form-input" style="padding-left:48px;">
+                      <option value="" disabled selected>Pilih Status...</option>
+                      <option value="Jejaka">Jejaka</option>
+                      <option value="Duda">Duda</option>
+                      <option value="Perawan">Perawan</option>
+                      <option value="Janda">Janda</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="pnStatusWaliNasab">Status Wali Nasab</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">👨‍👧</span>
+                    <input type="text" id="pnStatusWaliNasab" class="form-input" placeholder="Contoh: Ayah Kandung">
+                  </div>
+                </div>
+              </div>
+
+              <!-- BAGIAN 2: DATA AYAH PEMOHON -->
+              <h3 style="margin:28px 0 16px; color:#16a34a; font-size:1rem; border-bottom:2px solid #16a34a; padding-bottom:8px;">👨 Data Ayah Pemohon</h3>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="pnNamaAyah">Nama Ayah</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">👤</span>
+                    <input type="text" id="pnNamaAyah" class="form-input" placeholder="Nama Lengkap Ayah">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="pnNIKAyah">NIK Ayah</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">🆔</span>
+                    <input type="text" id="pnNIKAyah" class="form-input" placeholder="16 digit NIK" maxlength="16">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="pnTempatLahirAyah">Tempat Lahir Ayah</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">📍</span>
+                    <input type="text" id="pnTempatLahirAyah" class="form-input" placeholder="Tempat Lahir">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="pnTanggalLahirAyah">Tanggal Lahir Ayah</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">📅</span>
+                    <input type="text" id="pnTanggalLahirAyah" class="form-input" placeholder="dd/mm/yyyy">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="pnKewarganegaraanAyah">Kewarganegaraan</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">🌍</span>
+                    <input type="text" id="pnKewarganegaraanAyah" class="form-input" placeholder="WNI" value="WNI">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="pnAgamaAyah">Agama Ayah</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">🕌</span>
+                    <select id="pnAgamaAyah" class="form-input" style="padding-left:48px;">
+                      <option value="" disabled selected>Pilih Agama...</option>
+                      <option value="Islam">Islam</option>
+                      <option value="Kristen">Kristen</option>
+                      <option value="Katolik">Katolik</option>
+                      <option value="Hindu">Hindu</option>
+                      <option value="Buddha">Buddha</option>
+                      <option value="Konghucu">Konghucu</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="pnPekerjaanAyah">Pekerjaan Ayah</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">💼</span>
+                    <input type="text" id="pnPekerjaanAyah" class="form-input" placeholder="Pekerjaan Ayah">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="pnNamaKakekAyah">Nama Kakek (dari Ayah)</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">👴</span>
+                    <input type="text" id="pnNamaKakekAyah" class="form-input" placeholder="Nama Kakek dari Ayah">
+                  </div>
+                </div>
+
+                <div class="form-group" style="grid-column: span 2;">
+                  <label for="pnAlamatAyah">Alamat Ayah</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">🏠</span>
+                    <input type="text" id="pnAlamatAyah" class="form-input" placeholder="Alamat Lengkap Ayah">
+                  </div>
+                </div>
+              </div>
+
+              <!-- BAGIAN 3: DATA IBU PEMOHON -->
+              <h3 style="margin:28px 0 16px; color:#e11d48; font-size:1rem; border-bottom:2px solid #e11d48; padding-bottom:8px;">👩 Data Ibu Pemohon</h3>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="pnNamaIbu">Nama Ibu</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">👤</span>
+                    <input type="text" id="pnNamaIbu" class="form-input" placeholder="Nama Lengkap Ibu">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="pnNIKIbu">NIK Ibu</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">🆔</span>
+                    <input type="text" id="pnNIKIbu" class="form-input" placeholder="16 digit NIK" maxlength="16">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="pnTempatLahirIbu">Tempat Lahir Ibu</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">📍</span>
+                    <input type="text" id="pnTempatLahirIbu" class="form-input" placeholder="Tempat Lahir">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="pnTanggalLahirIbu">Tanggal Lahir Ibu</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">📅</span>
+                    <input type="text" id="pnTanggalLahirIbu" class="form-input" placeholder="dd/mm/yyyy">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="pnKewarganegaraanIbu">Kewarganegaraan</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">🌍</span>
+                    <input type="text" id="pnKewarganegaraanIbu" class="form-input" placeholder="WNI" value="WNI">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="pnAgamaIbu">Agama Ibu</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">🕌</span>
+                    <select id="pnAgamaIbu" class="form-input" style="padding-left:48px;">
+                      <option value="" disabled selected>Pilih Agama...</option>
+                      <option value="Islam">Islam</option>
+                      <option value="Kristen">Kristen</option>
+                      <option value="Katolik">Katolik</option>
+                      <option value="Hindu">Hindu</option>
+                      <option value="Buddha">Buddha</option>
+                      <option value="Konghucu">Konghucu</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="pnPekerjaanIbu">Pekerjaan Ibu</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">💼</span>
+                    <input type="text" id="pnPekerjaanIbu" class="form-input" placeholder="Pekerjaan Ibu">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="pnNamaKakekIbu">Nama Kakek (dari Ibu)</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">👴</span>
+                    <input type="text" id="pnNamaKakekIbu" class="form-input" placeholder="Nama Kakek dari Ibu">
+                  </div>
+                </div>
+
+                <div class="form-group" style="grid-column: span 2;">
+                  <label for="pnAlamatIbu">Alamat Ibu</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">🏠</span>
+                    <input type="text" id="pnAlamatIbu" class="form-input" placeholder="Alamat Lengkap Ibu">
+                  </div>
+                </div>
+              </div>
+
+              <!-- BAGIAN 4: DATA CALON PASANGAN -->
+              <h3 style="margin:28px 0 16px; color:#7c3aed; font-size:1rem; border-bottom:2px solid #7c3aed; padding-bottom:8px;">💑 Data Calon Pasangan</h3>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="pnNamaCalon">Nama Calon Pasangan</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">👤</span>
+                    <input type="text" id="pnNamaCalon" class="form-input" placeholder="Nama Lengkap Calon">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="pnNamaAyahCalon">Nama Ayah Calon</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">👨</span>
+                    <input type="text" id="pnNamaAyahCalon" class="form-input" placeholder="Nama Ayah Calon">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="pnNIKCalon">NIK Calon</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">🆔</span>
+                    <input type="text" id="pnNIKCalon" class="form-input" placeholder="16 digit NIK" maxlength="16">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="pnTempatLahirCalon">Tempat Lahir Calon</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">📍</span>
+                    <input type="text" id="pnTempatLahirCalon" class="form-input" placeholder="Tempat Lahir Calon">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="pnTanggalLahirCalon">Tanggal Lahir Calon</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">📅</span>
+                    <input type="text" id="pnTanggalLahirCalon" class="form-input" placeholder="dd/mm/yyyy">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="pnKewarganegaraanCalon">Kewarganegaraan</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">🌍</span>
+                    <input type="text" id="pnKewarganegaraanCalon" class="form-input" placeholder="WNI" value="WNI">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="pnAgamaCalon">Agama Calon</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">🕌</span>
+                    <select id="pnAgamaCalon" class="form-input" style="padding-left:48px;">
+                      <option value="" disabled selected>Pilih Agama...</option>
+                      <option value="Islam">Islam</option>
+                      <option value="Kristen">Kristen</option>
+                      <option value="Katolik">Katolik</option>
+                      <option value="Hindu">Hindu</option>
+                      <option value="Buddha">Buddha</option>
+                      <option value="Konghucu">Konghucu</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="pnPekerjaanCalon">Pekerjaan Calon</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">💼</span>
+                    <input type="text" id="pnPekerjaanCalon" class="form-input" placeholder="Pekerjaan Calon">
+                  </div>
+                </div>
+
+                <div class="form-group" style="grid-column: span 2;">
+                  <label for="pnAlamatCalon">Alamat Calon</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">🏠</span>
+                    <input type="text" id="pnAlamatCalon" class="form-input" placeholder="Alamat Lengkap Calon">
+                  </div>
+                </div>
+              </div>
+
+              <!-- BAGIAN 5: DETAIL AKAD NIKAH -->
+              <h3 style="margin:28px 0 16px; color:#ea580c; font-size:1rem; border-bottom:2px solid #ea580c; padding-bottom:8px;">🕌 Detail Akad Nikah</h3>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="pnCalonPasanganPemohon">Calon Pasangan Dari</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">💑</span>
+                    <select id="pnCalonPasanganPemohon" class="form-input" style="padding-left:48px;">
+                      <option value="" disabled selected>Pilih...</option>
+                      <option value="Suami">Suami</option>
+                      <option value="Istri">Istri</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="pnHariTanggalNikah">Hari / Tanggal Nikah</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">📅</span>
+                    <input type="text" id="pnHariTanggalNikah" class="form-input" placeholder="Klik untuk memilih tanggal" readonly style="cursor:pointer;">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="pnJamNikah">Jam Nikah</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">🕒</span>
+                    <input type="text" id="pnJamNikah" class="form-input" placeholder="Contoh: 09.00 WIB">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="pnTempatAkadNikah">Tempat Akad Nikah</label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">🕌</span>
+                    <input type="text" id="pnTempatAkadNikah" class="form-input" placeholder="Contoh: KUA Kecamatan Borobudur">
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-actions" style="margin-top:24px;">
+                <button type="submit" class="btn-save" id="btnSavePengantarNikah">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;vertical-align:middle;">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                  </svg>
+                  <span id="btnSavePengantarNikahText">Simpan Data</span>
+                </button>
+                <button type="button" class="btn-cancel" id="btnCancelPengantarNikah">Batal</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Data Table -->
+          <div class="table-section">
+            <h2>📊 Daftar Pengantar Nikah</h2>
+            <div style="overflow-x:auto;">
+              <table class="data-table" id="pengantarNikahTable">
+                <thead>
+                  <tr>
+                    <th>No</th>
+                    <th>Nomor Surat</th>
+                    <th>Nama Pemohon</th>
+                    <th>Nama Calon</th>
+                    <th>Tanggal Nikah</th>
+                    <th>Tempat Akad</th>
+                    <th style="width:120px;">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="pengantarNikahTableBody">
+                  <!-- JS Injected -->
+                </tbody>
+              </table>
+            </div>
+            <div class="empty-state" id="pengantarNikahEmptyState" style="display:none; padding:60px 40px;">
+              <div class="empty-icon">💍</div>
+              <h3>Belum Ada Data Pengantar Nikah</h3>
+              <p>Data yang tersimpan akan muncul di daftar ini.</p>
             </div>
           </div>
         </div>
@@ -1687,6 +2184,7 @@
   <script src="js/surat-ahli-waris.js"></script>
   <script src="js/daftar-hadir.js"></script>
   <script src="js/ijin-keramaian.js"></script>
+  <script src="js/pengantar-nikah.js"></script>
   <script src="js/settings.js"></script>
 </body>
 </html>

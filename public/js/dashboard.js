@@ -27,7 +27,8 @@ const pageTitles = {
   pengaturan: 'Pengaturan',
   'ijin-keramaian': 'Ijin Keramaian',
   'ijin-tempat': 'Ijin Keramaian — Ijin Tempat',
-  'daftar-hadir': 'Daftar Hadir & Penerimaan'
+  'daftar-hadir': 'Daftar Hadir & Penerimaan',
+  'pengantar-nikah': 'Pengantar Nikah'
 };
 
 // ── Initialize Sidebar Toggle ──
@@ -231,6 +232,11 @@ function navigateTo(page) {
   if (page === 'surat-ahli-waris' && typeof loadAhliWarisData === 'function') {
     loadAhliWarisData();
     loadNextAhliWarisNumber();
+  }
+
+  if (page === 'pengantar-nikah') {
+    if (typeof loadNextPNNumber === 'function') loadNextPNNumber();
+    if (typeof loadPengantarNikahData === 'function') loadPengantarNikahData();
   }
 
   // Ijin Keramaian — kedua sub-page menggunakan page-ijin-keramaian yang sama

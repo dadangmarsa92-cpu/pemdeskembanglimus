@@ -401,6 +401,7 @@ async function loadIjinTempatData() {
                     <td>${index + 1}</td>
                     <td>${item.nama_pemilik_lahan}</td>
                     <td>${item.nik_pemilik_lahan}</td>
+                    <td>${item.alamat_pemilik_lahan || '-'}</td>
                     <td>${item.nama_acara}</td>
                     <td>${item.hari_tanggal_acara}</td>
                     <td>${item.tempat_acara}</td>
