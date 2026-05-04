@@ -44,7 +44,8 @@ async function initDatabase() {
       `CREATE TABLE IF NOT EXISTS pengantar_nikah (id INTEGER PRIMARY KEY AUTOINCREMENT, nomor_surat TEXT NOT NULL, tanggal_pengajuan TEXT NOT NULL, nama_pemohon TEXT NOT NULL, nik_pemohon TEXT NOT NULL, jenis_kelamin_pemohon TEXT, tempat_lahir_pemohon TEXT, tanggal_lahir_pemohon TEXT, kewarganegaraan_pemohon TEXT DEFAULT 'WNI', agama_pemohon TEXT, pekerjaan_pemohon TEXT, alamat_pemohon TEXT, status_pemohon TEXT, status_wali_nasab TEXT, nama_ayah_pemohon TEXT, nik_ayah_pemohon TEXT, tempat_lahir_ayah_pemohon TEXT, tanggal_lahir_ayah_pemohon TEXT, kewarganegaraan_ayah_pemohon TEXT DEFAULT 'WNI', agama_ayah_pemohon TEXT, pekerjaan_ayah_pemohon TEXT, alamat_ayah_pemohon TEXT, nama_kakek_dari_ayah_pemohon TEXT, nama_ibu_pemohon TEXT, nik_ibu_pemohon TEXT, tempat_lahir_ibu_pemohon TEXT, tanggal_lahir_ibu_pemohon TEXT, kewarganegaraan_ibu_pemohon TEXT DEFAULT 'WNI', agama_ibu_pemohon TEXT, pekerjaan_ibu_pemohon TEXT, alamat_ibu_pemohon TEXT, nama_kakek_dari_ayah_ibu TEXT, nama_calon TEXT, nama_ayah_calon TEXT, nik_calon TEXT, tempat_lahir_calon TEXT, tanggal_lahir_calon TEXT, kewarganegaraan_calon TEXT DEFAULT 'WNI', agama_calon TEXT, pekerjaan_calon TEXT, alamat_calon TEXT, calon_pasangan_pemohon TEXT, hari_tanggal_nikah TEXT, jam_nikah TEXT, tempat_akad_nikah TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`,
       `CREATE TABLE IF NOT EXISTS rab_bidang (id INTEGER PRIMARY KEY AUTOINCREMENT, no TEXT, nama_bidang TEXT)`,
       `CREATE TABLE IF NOT EXISTS rab_sub_bidang (id INTEGER PRIMARY KEY AUTOINCREMENT, bidang_id INTEGER, no TEXT, nama_sub_bidang TEXT)`,
-      `CREATE TABLE IF NOT EXISTS rab_sub_sub_bidang (id INTEGER PRIMARY KEY AUTOINCREMENT, sub_bidang_id INTEGER, no TEXT, nama_ss_bidang TEXT)`
+      `CREATE TABLE IF NOT EXISTS rab_sub_sub_bidang (id INTEGER PRIMARY KEY AUTOINCREMENT, sub_bidang_id INTEGER, no TEXT, nama_ss_bidang TEXT)`,
+      `CREATE TABLE IF NOT EXISTS rak_kegiatan (id INTEGER PRIMARY KEY AUTOINCREMENT, tahun TEXT NOT NULL, ss_code TEXT NOT NULL, bulan TEXT NOT NULL DEFAULT '[]', created_at DATETIME DEFAULT CURRENT_TIMESTAMP, UNIQUE(tahun, ss_code))`
     ];
 
     for (const sql of tables) {
@@ -815,6 +816,139 @@ app.post('/api/rab/save', (req, res) => {
   } catch (err) {
     console.error('Error saving RAB:', err);
     res.status(500).json({ success: false, message: 'Gagal menyimpan data RAB.' });
+  }
+});
+
+// ── RAK Kegiatan: Get all RAK data for a year ──
+app.get('/api/rak', (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ success: false, message: 'Belum login.' });
+
+  const { tahun } = req.query;
+  if (!tahun) return res.status(400).json({ success: false, message: 'Parameter tahun diperlukan.' });
+
+  try {
+    // 1. Get all RAB records with grand_total > 0 for this year (include data_json for rincian)
+    const rabStmt = db.prepare('SELECT ss_code, ss_name, judul_kegiatan, grand_total, data_json FROM rab_records WHERE tahun = ? AND grand_total > 0 ORDER BY ss_code ASC');
+    rabStmt.bind([tahun]);
+    const rabRecords = [];
+    while (rabStmt.step()) {
+      rabRecords.push(rabStmt.getAsObject());
+    }
+    rabStmt.free();
+
+    // 2. Get all RAK month selections for this year
+    const rakStmt = db.prepare('SELECT ss_code, bulan FROM rak_kegiatan WHERE tahun = ?');
+    rakStmt.bind([tahun]);
+    const rakMap = {};
+    while (rakStmt.step()) {
+      const row = rakStmt.getAsObject();
+      try { rakMap[row.ss_code] = JSON.parse(row.bulan); } catch(e) { rakMap[row.ss_code] = []; }
+    }
+    rakStmt.free();
+
+    // 3. Get hierarchy info (bidang -> sub_bidang -> ss_bidang) from DB tables
+    const hierarchyResult = db.exec(`
+      SELECT 
+        b.no AS bidang_no, b.nama_bidang,
+        sb.no AS sub_no, sb.nama_sub_bidang,
+        ss.no AS ss_no, ss.nama_ss_bidang
+      FROM rab_sub_sub_bidang ss
+      JOIN rab_sub_bidang sb ON ss.sub_bidang_id = sb.id
+      JOIN rab_bidang b ON sb.bidang_id = b.id
+      ORDER BY b.no, sb.no, ss.no
+    `);
+
+    // Build a ss_no -> hierarchy info map
+    const hierarchyMap = {};
+    if (hierarchyResult.length > 0) {
+      hierarchyResult[0].values.forEach(([bNo, bName, sbNo, sbName, ssNo, ssName]) => {
+        if (ssNo) {
+          hierarchyMap[ssNo] = { bidang_no: bNo, bidang_name: bName, sub_no: sbNo, sub_name: sbName };
+        }
+      });
+    }
+
+    // 4. Combine RAB data with RAK month selections + hierarchy + rincian
+    const combined = rabRecords.map(rec => {
+      const hInfo = hierarchyMap[rec.ss_code] || {};
+      // Parse rincian items from data_json
+      let rincian = [];
+      try {
+        const items = JSON.parse(rec.data_json || '[]');
+        rincian = items.filter(it => !it.isBold && it.uraian && it.uraian.trim()).map(it => ({
+          uraian: it.uraian,
+          vol1: it.vol1 || '',
+          satuan1: it.satuan1 || '',
+          vol2: it.vol2 || '',
+          satuan2: it.satuan2 || '',
+          harga: it.harga || 0,
+          total: it.total || 0
+        }));
+      } catch(e) {}
+      return {
+        ss_code: rec.ss_code,
+        ss_name: rec.ss_name,
+        judul_kegiatan: rec.judul_kegiatan || '',
+        grand_total: rec.grand_total,
+        bulan: rakMap[rec.ss_code] || [],
+        bidang_no: hInfo.bidang_no || '',
+        bidang_name: hInfo.bidang_name || '',
+        sub_no: hInfo.sub_no || '',
+        sub_name: hInfo.sub_name || '',
+        rincian: rincian
+      };
+    });
+
+    res.json({ success: true, data: combined });
+  } catch (err) {
+    console.error('Error fetching RAK data:', err);
+    res.status(500).json({ success: false, message: 'Gagal mengambil data RAK.' });
+  }
+});
+
+// ── RAK Kegiatan: Save month selection for one activity ──
+app.post('/api/rak/save', (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ success: false, message: 'Belum login.' });
+
+  const { tahun, ss_code, bulan } = req.body;
+  if (!tahun || !ss_code || !Array.isArray(bulan)) {
+    return res.status(400).json({ success: false, message: 'Data tidak lengkap.' });
+  }
+
+  try {
+    const stmt = db.prepare('INSERT OR REPLACE INTO rak_kegiatan (tahun, ss_code, bulan) VALUES (?, ?, ?)');
+    stmt.run([tahun, ss_code, JSON.stringify(bulan)]);
+    stmt.free();
+    saveDatabase();
+    res.json({ success: true, message: 'RAK berhasil disimpan.' });
+  } catch (err) {
+    console.error('Error saving RAK:', err);
+    res.status(500).json({ success: false, message: 'Gagal menyimpan RAK.' });
+  }
+});
+
+// ── RAK Kegiatan: Save all month selections at once ──
+app.post('/api/rak/save-bulk', (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ success: false, message: 'Belum login.' });
+
+  const { tahun, items } = req.body;
+  if (!tahun || !Array.isArray(items)) {
+    return res.status(400).json({ success: false, message: 'Data tidak lengkap.' });
+  }
+
+  try {
+    const stmt = db.prepare('INSERT OR REPLACE INTO rak_kegiatan (tahun, ss_code, bulan) VALUES (?, ?, ?)');
+    items.forEach(item => {
+      if (item.ss_code && Array.isArray(item.bulan)) {
+        stmt.run([tahun, item.ss_code, JSON.stringify(item.bulan)]);
+      }
+    });
+    stmt.free();
+    saveDatabase();
+    res.json({ success: true, message: `RAK berhasil disimpan (${items.length} kegiatan).` });
+  } catch (err) {
+    console.error('Error bulk saving RAK:', err);
+    res.status(500).json({ success: false, message: 'Gagal menyimpan data RAK.' });
   }
 });
 

@@ -23,6 +23,7 @@ const pageTitles = {
   permohonan: 'Permohonan Narasumber',
   sk: 'SK Narasumber',
   rab: 'Rencana Anggaran Biaya (RAB)',
+  rak: 'RAK Kegiatan',
   laporan: 'Laporan',
   pengaturan: 'Pengaturan',
   'ijin-keramaian': 'Ijin Keramaian',
@@ -227,6 +228,10 @@ function navigateTo(page) {
 
   if (page === 'rab' && typeof initRab === 'function') {
     initRab();
+  }
+
+  if (page === 'rak' && typeof initRak === 'function') {
+    initRak();
   }
 
   if (page === 'surat-ahli-waris' && typeof loadAhliWarisData === 'function') {

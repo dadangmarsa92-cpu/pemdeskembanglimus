@@ -78,6 +78,22 @@
               <span>RAB</span>
             </a>
           </li>
+          <li>
+            <a href="#" class="sidebar-link" data-page="rak">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+                <line x1="8" y1="14" x2="8" y2="14.01"></line>
+                <line x1="12" y1="14" x2="12" y2="14.01"></line>
+                <line x1="16" y1="14" x2="16" y2="14.01"></line>
+                <line x1="8" y1="18" x2="8" y2="18.01"></line>
+                <line x1="12" y1="18" x2="12" y2="18.01"></line>
+              </svg>
+              <span>RAK Kegiatan</span>
+            </a>
+          </li>
 
           <li>
             <a href="#" class="sidebar-link" data-page="daftar-hadir">
@@ -723,6 +739,89 @@
                 </svg>
                 Simpan RAB
               </button>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- ═══════════════ PAGE: RAK KEGIATAN ═══════════════ -->
+        <div class="page-section" id="page-rak">
+          <div class="page-header-section" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+            <div>
+              <h1>📅 RAK Kegiatan</h1>
+              <p>Rencana Anggaran Kegiatan — Jadwal Pelaksanaan Bulanan</p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+              <div style="display: flex; align-items: center; gap: 8px; background: white; padding: 8px 16px; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: var(--shadow-sm);">
+                <label for="rakTahunSelector" style="font-weight: 600; color: var(--text-dark); margin: 0; white-space: nowrap;">Tahun Anggaran:</label>
+                <select id="rakTahunSelector" class="form-input" style="width: 100px; font-weight: bold; padding: 6px 12px; margin: 0; min-height: unset;">
+                  <!-- Filled by JS -->
+                </select>
+              </div>
+              <button class="btn-save" id="btnSaveRak" style="display:flex; align-items:center; gap:6px; padding:8px 20px; font-size:0.9rem;" onclick="saveRakBulk()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                  <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                  <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+                Simpan RAK
+              </button>
+            </div>
+          </div>
+
+          <!-- Summary Cards -->
+          <div id="rakSummaryCards" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-bottom: 20px;">
+            <!-- Filled by JS: 12 month summary cards -->
+          </div>
+
+          <!-- RAK Table -->
+          <div style="background: white; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: var(--shadow-sm); overflow: hidden;">
+            <div style="overflow-x: auto;">
+              <table class="data-table" id="rakTable" style="margin:0; border:none; min-width: 1200px;">
+                <thead>
+                  <tr style="background: linear-gradient(135deg, #1e3a5f, #2563eb); color: white;">
+                    <th rowspan="2" style="width:40px; text-align:center; border-right: 1px solid rgba(255,255,255,0.15); border-bottom: 1px solid rgba(255,255,255,0.15); padding: 12px 8px;">No</th>
+                    <th rowspan="2" style="width:90px; text-align:center; border-right: 1px solid rgba(255,255,255,0.15); border-bottom: 1px solid rgba(255,255,255,0.15); padding: 12px 8px;">Kode</th>
+                    <th rowspan="2" style="border-right: 1px solid rgba(255,255,255,0.15); border-bottom: 1px solid rgba(255,255,255,0.15); padding: 12px 10px; min-width: 220px;">Kegiatan</th>
+                    <th rowspan="2" style="width:140px; text-align:right; border-right: 1px solid rgba(255,255,255,0.15); border-bottom: 1px solid rgba(255,255,255,0.15); padding: 12px 10px; white-space: nowrap;">Anggaran (Rp)</th>
+                    <th colspan="12" style="text-align:center; border-bottom: 1px solid rgba(255,255,255,0.15); padding: 10px 8px;">Jadwal Pelaksanaan</th>
+                  </tr>
+                  <tr style="background: linear-gradient(135deg, #2563eb, #3b82f6); color: white;">
+                    <th style="width:42px; text-align:center; padding:8px 4px; font-size:0.7rem; border-right: 1px solid rgba(255,255,255,0.1);">Jan</th>
+                    <th style="width:42px; text-align:center; padding:8px 4px; font-size:0.7rem; border-right: 1px solid rgba(255,255,255,0.1);">Feb</th>
+                    <th style="width:42px; text-align:center; padding:8px 4px; font-size:0.7rem; border-right: 1px solid rgba(255,255,255,0.1);">Mar</th>
+                    <th style="width:42px; text-align:center; padding:8px 4px; font-size:0.7rem; border-right: 1px solid rgba(255,255,255,0.1);">Apr</th>
+                    <th style="width:42px; text-align:center; padding:8px 4px; font-size:0.7rem; border-right: 1px solid rgba(255,255,255,0.1);">Mei</th>
+                    <th style="width:42px; text-align:center; padding:8px 4px; font-size:0.7rem; border-right: 1px solid rgba(255,255,255,0.1);">Jun</th>
+                    <th style="width:42px; text-align:center; padding:8px 4px; font-size:0.7rem; border-right: 1px solid rgba(255,255,255,0.1);">Jul</th>
+                    <th style="width:42px; text-align:center; padding:8px 4px; font-size:0.7rem; border-right: 1px solid rgba(255,255,255,0.1);">Agt</th>
+                    <th style="width:42px; text-align:center; padding:8px 4px; font-size:0.7rem; border-right: 1px solid rgba(255,255,255,0.1);">Sep</th>
+                    <th style="width:42px; text-align:center; padding:8px 4px; font-size:0.7rem; border-right: 1px solid rgba(255,255,255,0.1);">Okt</th>
+                    <th style="width:42px; text-align:center; padding:8px 4px; font-size:0.7rem; border-right: 1px solid rgba(255,255,255,0.1);">Nov</th>
+                    <th style="width:42px; text-align:center; padding:8px 4px; font-size:0.7rem;">Des</th>
+                  </tr>
+                </thead>
+                <tbody id="rakTableBody">
+                  <tr><td colspan="16" style="text-align:center; padding:60px 20px; color:var(--text-muted);"><div style="font-size:2rem; margin-bottom:12px;">📅</div>Pilih tahun anggaran untuk memuat data RAK Kegiatan.</td></tr>
+                </tbody>
+                <tfoot id="rakTableFoot" style="display: none;">
+                  <tr style="background: linear-gradient(135deg, #ecfdf5, #d1fae5);">
+                    <td colspan="4" style="text-align:right; padding:14px 16px; font-weight:800; font-size:0.95rem; color:#065f46; border-top: 2px solid #a7f3d0;">TOTAL ANGGARAN PER BULAN</td>
+                    <td id="rakFootJan" style="text-align:center; padding:10px 4px; font-weight:700; font-size:0.7rem; color:#065f46; border-top: 2px solid #a7f3d0;">0</td>
+                    <td id="rakFootFeb" style="text-align:center; padding:10px 4px; font-weight:700; font-size:0.7rem; color:#065f46; border-top: 2px solid #a7f3d0;">0</td>
+                    <td id="rakFootMar" style="text-align:center; padding:10px 4px; font-weight:700; font-size:0.7rem; color:#065f46; border-top: 2px solid #a7f3d0;">0</td>
+                    <td id="rakFootApr" style="text-align:center; padding:10px 4px; font-weight:700; font-size:0.7rem; color:#065f46; border-top: 2px solid #a7f3d0;">0</td>
+                    <td id="rakFootMei" style="text-align:center; padding:10px 4px; font-weight:700; font-size:0.7rem; color:#065f46; border-top: 2px solid #a7f3d0;">0</td>
+                    <td id="rakFootJun" style="text-align:center; padding:10px 4px; font-weight:700; font-size:0.7rem; color:#065f46; border-top: 2px solid #a7f3d0;">0</td>
+                    <td id="rakFootJul" style="text-align:center; padding:10px 4px; font-weight:700; font-size:0.7rem; color:#065f46; border-top: 2px solid #a7f3d0;">0</td>
+                    <td id="rakFootAgt" style="text-align:center; padding:10px 4px; font-weight:700; font-size:0.7rem; color:#065f46; border-top: 2px solid #a7f3d0;">0</td>
+                    <td id="rakFootSep" style="text-align:center; padding:10px 4px; font-weight:700; font-size:0.7rem; color:#065f46; border-top: 2px solid #a7f3d0;">0</td>
+                    <td id="rakFootOkt" style="text-align:center; padding:10px 4px; font-weight:700; font-size:0.7rem; color:#065f46; border-top: 2px solid #a7f3d0;">0</td>
+                    <td id="rakFootNov" style="text-align:center; padding:10px 4px; font-weight:700; font-size:0.7rem; color:#065f46; border-top: 2px solid #a7f3d0;">0</td>
+                    <td id="rakFootDes" style="text-align:center; padding:10px 4px; font-weight:700; font-size:0.7rem; color:#065f46; border-top: 2px solid #a7f3d0;">0</td>
+                  </tr>
+                </tfoot>
+              </table>
             </div>
           </div>
         </div>
@@ -2199,6 +2298,7 @@
   <script src="js/sppd.js"></script>
   <script src="js/narasumber.js"></script>
   <script src="js/rab.js?v=2"></script>
+  <script src="js/rak.js"></script>
   <script src="js/surat-ahli-waris.js"></script>
   <script src="js/daftar-hadir.js"></script>
   <script src="js/ijin-keramaian.js"></script>
