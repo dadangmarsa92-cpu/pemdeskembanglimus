@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initSidebar();
   initNavigation();
   initSppdPrompt();
+  checkRakNotificationBadge();
 
   // Logout button
   document.getElementById('btnLogout').addEventListener('click', handleLogout);
@@ -28,7 +29,9 @@ const pageTitles = {
   'ijin-keramaian': 'Ijin Keramaian',
   'ijin-tempat': 'Ijin Keramaian — Ijin Tempat',
   'daftar-hadir': 'Daftar Hadir & Penerimaan',
-  'pengantar-nikah': 'Pengantar Nikah'
+  'pengantar-nikah': 'Pengantar Nikah',
+  'rak-kegiatan': 'RAK Kegiatan',
+  'rak-kalender': 'Kalender Kegiatan'
 };
 
 // ── Initialize Sidebar Toggle ──
@@ -237,6 +240,14 @@ function navigateTo(page) {
   if (page === 'pengantar-nikah') {
     if (typeof loadNextPNNumber === 'function') loadNextPNNumber();
     if (typeof loadPengantarNikahData === 'function') loadPengantarNikahData();
+  }
+
+  if (page === 'rak-kegiatan' && typeof initRakKegiatan === 'function') {
+    initRakKegiatan();
+  }
+  
+  if (page === 'rak-kalender' && typeof initRakKalender === 'function') {
+    initRakKalender();
   }
 
   // Ijin Keramaian — kedua sub-page menggunakan page-ijin-keramaian yang sama
@@ -623,3 +634,145 @@ function showToast(message, type = 'error') {
     setTimeout(() => toast.remove(), 300);
   }, 4000);
 }
+
+// ── RAK Notification Logic ──
+window.toggleRakNotification = async function(event) {
+  event.stopPropagation();
+  const dropdown = document.getElementById('rakNotifDropdown');
+  if (dropdown.style.display === 'block') {
+    dropdown.style.display = 'none';
+    return;
+  }
+  
+  // Close if clicking outside
+  document.addEventListener('click', function closeNotif(e) {
+    if (!dropdown.contains(e.target)) {
+      dropdown.style.display = 'none';
+      document.removeEventListener('click', closeNotif);
+    }
+  });
+
+  dropdown.style.display = 'block';
+  const content = document.getElementById('rakNotifContent');
+  const monthLabel = document.getElementById('rakNotifMonthLabel');
+  
+  const now = new Date();
+  const tahun = now.getFullYear().toString();
+  const bulan = now.getMonth() + 1; // 1-12
+  
+  const bulanNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+  monthLabel.textContent = bulanNames[bulan - 1] + ' ' + tahun;
+  
+  content.innerHTML = '<div style="text-align: center; color: #94a3b8; padding: 40px 20px;">Memuat data...</div>';
+
+  try {
+    const res = await fetch(`/api/rak?tahun=${tahun}`);
+    const result = await res.json();
+
+    if (!result.success || !result.rabRecords) {
+      content.innerHTML = '<div style="padding: 20px; text-align: center; color: #ef4444; font-size: 0.9rem;">Gagal memuat data.</div>';
+      return;
+    }
+
+    const { rabRecords, rakAllocations, ssLookup } = result;
+    
+    // Collect items for current month
+    const currentMonthItems = [];
+    let totalBulan = 0;
+
+    rabRecords.forEach(rec => {
+      let groupName = rec._groupName || (ssLookup && ssLookup[rec.ss_code]) || rec.ss_code;
+      const items = rec.data_json || [];
+      items.forEach((u, idx) => {
+        const uraianIndex = u.index !== undefined ? String(u.index) : String(idx);
+        const allocKey = `${rec.ss_code}::${uraianIndex}`;
+        const allocs = rakAllocations[allocKey] || {};
+        const nominal = allocs[bulan];
+
+        if (nominal && nominal > 0) {
+          currentMonthItems.push({
+            groupName: groupName,
+            uraian: u.uraian || `Item ${idx + 1}`,
+            nominal: nominal
+          });
+          totalBulan += nominal;
+        }
+      });
+    });
+
+    if (currentMonthItems.length === 0) {
+      content.innerHTML = `
+        <div style="padding: 30px 20px; text-align: center; color: #94a3b8;">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 8px; opacity: 0.5;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+          <p style="margin:0; font-size: 0.9rem; font-weight: 500;">Tidak ada jadwal kegiatan bulan ini.</p>
+        </div>
+      `;
+      document.getElementById('rakNotifBadge').style.display = 'none';
+    } else {
+      let html = `<div style="background: #f8fafc; padding: 12px 16px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 0.8rem; color: #64748b; font-weight: 600;">Total Anggaran</span>
+        <span style="font-size: 1.1rem; color: #15803d; font-weight: 800;">Rp ${totalBulan.toLocaleString('id-ID')}</span>
+      </div>`;
+      
+      html += '<ul style="list-style: none; padding: 0; margin: 0;">';
+      currentMonthItems.forEach((item, idx) => {
+        html += `
+          <li style="padding: 12px 16px; border-bottom: 1px solid #f1f5f9; transition: background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+            <div style="font-size: 0.7rem; color: #64748b; font-weight: 700; margin-bottom: 4px; text-transform: uppercase;">${item.groupName}</div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
+              <span style="font-size: 0.85rem; color: #1e293b; line-height: 1.4; flex: 1;">${item.uraian}</span>
+              <span style="font-size: 0.85rem; font-weight: 700; color: #15803d; white-space: nowrap;">Rp ${item.nominal.toLocaleString('id-ID')}</span>
+            </div>
+          </li>
+        `;
+      });
+      html += '</ul>';
+      content.innerHTML = html;
+      
+      // Show badge
+      const badge = document.getElementById('rakNotifBadge');
+      badge.textContent = currentMonthItems.length;
+      badge.style.display = 'flex';
+    }
+  } catch (err) {
+    console.error('Failed to load RAK Notification data:', err);
+    content.innerHTML = '<div style="padding: 20px; text-align: center; color: #ef4444; font-size: 0.9rem;">Gagal memuat data.</div>';
+  }
+};
+
+window.checkRakNotificationBadge = async function() {
+  const badge = document.getElementById('rakNotifBadge');
+  if (!badge) return;
+  
+  const now = new Date();
+  const tahun = now.getFullYear().toString();
+  const bulan = now.getMonth() + 1;
+
+  try {
+    const res = await fetch(`/api/rak?tahun=${tahun}`);
+    const result = await res.json();
+    if (!result.success || !result.rabRecords) return;
+
+    const { rabRecords, rakAllocations } = result;
+    let count = 0;
+
+    rabRecords.forEach(rec => {
+      const items = rec.data_json || [];
+      items.forEach((u, idx) => {
+        const uraianIndex = u.index !== undefined ? String(u.index) : String(idx);
+        const allocKey = `${rec.ss_code}::${uraianIndex}`;
+        const allocs = rakAllocations[allocKey] || {};
+        if (allocs[bulan] && allocs[bulan] > 0) count++;
+      });
+    });
+
+    if (count > 0) {
+      badge.textContent = count;
+      badge.style.display = 'flex';
+    } else {
+      badge.style.display = 'none';
+    }
+  } catch (err) {
+    // silently ignore badge failure
+  }
+};

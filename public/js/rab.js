@@ -58,6 +58,21 @@ async function loadRabExcelData() {
     try {
         listContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-muted);">Memuat...</div>';
         
+        // Reset sub and sub-sub panels
+        document.getElementById('rabSubBidangList').innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-muted);">Pilih Bidang terlebih dahulu.</div>';
+        document.getElementById('rabSubSubContent').innerHTML = `
+            <div style="background: white; border-radius: 8px; border: 1px solid #e2e8f0; padding: 60px 40px; text-align: center; color: var(--text-muted);">
+                <div style="font-size: 3rem; margin-bottom: 16px;">📂</div>
+                <p>Pilih Sub Bidang untuk melihat rincian kegiatan.</p>
+            </div>
+        `;
+        document.getElementById('rabSubBidangHeader').innerHTML = '';
+        document.getElementById('rabSubSubHeader').innerHTML = '';
+        document.getElementById('rabSubSubHeader').style.display = 'none';
+        
+        currentBidangId = null;
+        currentSubBidangId = null;
+        
         // 1. Fetch Hierarchy (Excel/DB) with cache busting
         const res = await fetch(`/api/rab?t=${new Date().getTime()}`);
         const result = await res.json();
@@ -101,10 +116,10 @@ function renderBidangList(data) {
             <span class="idx-badge">${String(item.no || (index + 1)).padStart(2, '0')}</span>
             <span style="flex: 1;">${bidangName}</span>
             <div class="hierarchy-actions">
-                <button class="edit-btn" onclick="event.stopPropagation(); editBidang(${item.id}, '${item.no}', \`${bidangName}\`)" title="Edit">
+                <button class="edit-btn" onclick="editBidang(event, ${item.id}, '${item.no}', \`${bidangName}\`)" title="Edit">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                 </button>
-                <button class="delete-btn" onclick="event.stopPropagation(); hapusBidang(${item.id})" title="Hapus">
+                <button class="delete-btn" onclick="hapusBidang(event, ${item.id})" title="Hapus">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                 </button>
             </div>
@@ -339,9 +354,16 @@ async function openRabRincianModal(ssCode, ssName) {
             const savedData = await savedRes.json();
             
             let savedMap = {};
+            let savedRecords = [];
+            window.deletedExcelIndices = []; // Reset on modal open
             if (savedData.success && savedData.data) {
+                savedRecords = savedData.data;
                 savedData.data.forEach(item => {
-                    savedMap[item.index] = item;
+                    if (item._isDeleted) {
+                        window.deletedExcelIndices.push(item.index);
+                    } else {
+                        savedMap[item.index] = item;
+                    }
                 });
                 if (savedData.judul_kegiatan) {
                     document.getElementById('rabRincianJudulKegiatan').value = savedData.judul_kegiatan;
@@ -352,7 +374,7 @@ async function openRabRincianModal(ssCode, ssName) {
                 document.getElementById('rabRincianJudulKegiatan').value = '';
             }
             
-            renderRabRincianTable(savedMap);
+            renderRabRincianTable(savedMap, savedRecords);
         } else {
             document.getElementById('rabRincianTableBody').innerHTML = `<tr><td colspan="8" style="text-align:center; padding:40px; color:red;">${result.message || 'Gagal memuat rincian kegiatan'}</td></tr>`;
         }
@@ -366,7 +388,7 @@ window.closeRabRincianModal = function() {
     document.getElementById('rabRincianModal').style.display = 'none';
 }
 
-function renderRabRincianTable(savedMap = {}) {
+function renderRabRincianTable(savedMap = {}, savedRecords = []) {
     const tbody = document.getElementById('rabRincianTableBody');
     tbody.innerHTML = '';
     
@@ -382,13 +404,47 @@ function renderRabRincianTable(savedMap = {}) {
     let html = '';
     
     let currentGroupId = null;
+    
+    // Collect custom items that belong to excel groups
+    const excelCustomItems = {};
+    Object.keys(savedMap).forEach(k => {
+        if (k.startsWith('custom_')) {
+            const item = savedMap[k];
+            const gId = item._groupId || 'default';
+            if (gId.startsWith('excel_')) {
+                if (!excelCustomItems[gId]) excelCustomItems[gId] = [];
+                excelCustomItems[gId].push({
+                    itemId: item._itemId || k,
+                    uraian: item.uraian || '',
+                    v1: item.v1 || '', sat1: item.sat1 || '',
+                    v2: item.v2 || '', sat2: item.sat2 || '',
+                    price: item.price || '', catatan: item.catatan || ''
+                });
+            }
+        }
+    });
+
     if (hasExcelData) {
         currentRabRincianData.forEach((item, index) => {
             if (item.isBold) {
+                // If there are custom items for the PREVIOUS excel group, append them now
+                if (currentGroupId && excelCustomItems[currentGroupId]) {
+                    excelCustomItems[currentGroupId].forEach((cItem) => {
+                        const cIdxStr = `custom_${currentGroupId}_${cItem.itemId}`;
+                        const savedPrice = cItem.price ? parseInt(cItem.price, 10).toLocaleString('id-ID') : '';
+                        html += buildCustomSubItemHtml(cIdxStr, currentGroupId, noCounter++, cItem.uraian, cItem, savedPrice);
+                    });
+                }
+
                 currentGroupId = 'excel_' + index;
                 html += `
                     <tr data-excel-group="${currentGroupId}" style="background: #f8fafc; font-weight: bold;">
-                        <td style="text-align:center; padding:12px; border-right:1px solid var(--border-color);">${item.uraian.match(/^[a-z]\./i) ? item.uraian.split('.')[0] + '.' : ''}</td>
+                        <td style="text-align:center; padding:12px; border-right:1px solid var(--border-color);">
+                            <div style="display:flex; align-items:center; justify-content:center; gap:8px;">
+                                <span class="drag-handle" style="cursor:grab; color:#94a3b8; font-size:1.1rem;" title="Tarik untuk mengurutkan grup">☰</span>
+                                <span>${item.uraian.match(/^[a-z]\./i) ? item.uraian.split('.')[0] + '.' : ''}</span>
+                            </div>
+                        </td>
                         <td colspan="5" style="padding:12px; border-right:1px solid var(--border-color);">
                             <div style="display:flex; justify-content:space-between; align-items:center;">
                                 <span>${item.uraian}</span>
@@ -440,6 +496,15 @@ function renderRabRincianTable(savedMap = {}) {
                 `;
             }
         });
+        
+        // Append custom items for the LAST excel group
+        if (currentGroupId && excelCustomItems[currentGroupId]) {
+            excelCustomItems[currentGroupId].forEach((cItem) => {
+                const cIdxStr = `custom_${currentGroupId}_${cItem.itemId}`;
+                const savedPrice = cItem.price ? parseInt(cItem.price, 10).toLocaleString('id-ID') : '';
+                html += buildCustomSubItemHtml(cIdxStr, currentGroupId, noCounter++, cItem.uraian, cItem, savedPrice);
+            });
+        }
     }
     
     // Render custom (user-added) groups
@@ -449,7 +514,9 @@ function renderRabRincianTable(savedMap = {}) {
             // Header row with editable name + add sub-item & delete group buttons
             html += `
                 <tr data-custom-group="${group.groupId}" style="background: #f0fdf4; font-weight: bold;">
-                    <td style="text-align:center; padding:12px; border-right:1px solid var(--border-color);"></td>
+                    <td style="text-align:center; padding:12px; border-right:1px solid var(--border-color);">
+                        <span class="drag-handle" style="cursor:grab; color:#94a3b8; font-size:1.1rem;" title="Tarik untuk mengurutkan grup">☰</span>
+                    </td>
                     <td colspan="5" style="padding:10px 12px; border-right:1px solid var(--border-color);">
                         <div style="display:flex; align-items:center; gap:12px;">
                             <input type="text" data-field="group-name" value="${(group.name || '').replace(/"/g, '&quot;')}" placeholder="Nama kegiatan..." style="flex:1; padding:6px 10px; font-weight:700; font-size:0.95rem; border:1px solid #86efac; border-radius:6px; background:#f0fdf4; color:#15803d;">
@@ -475,6 +542,46 @@ function renderRabRincianTable(savedMap = {}) {
     
     tbody.innerHTML = html;
     
+    // --- REORDER DOM BASED ON savedRecords ---
+    if (savedRecords && savedRecords.length > 0) {
+        const processedHeaders = new Set();
+        let currentInsertNode = null;
+
+        savedRecords.forEach(savedItem => {
+            const row = tbody.querySelector(`tr[data-index="${savedItem.index}"]`);
+            if (row) {
+                // If it was marked as deleted, remove it from the DOM
+                if (savedItem._isDeleted) {
+                    row.remove();
+                    return; // Skip reordering logic for this item
+                }
+                
+                const groupId = row.getAttribute('data-group');
+                if (groupId) {
+                    const header = tbody.querySelector(`tr[data-custom-group="${groupId}"], tr[data-excel-group="${groupId}"]`);
+                    if (header && !processedHeaders.has(groupId)) {
+                        // Move header to the current position
+                        if (currentInsertNode) {
+                            currentInsertNode.insertAdjacentElement('afterend', header);
+                        } else {
+                            tbody.insertBefore(header, tbody.firstChild);
+                        }
+                        currentInsertNode = header;
+                        processedHeaders.add(groupId);
+                    }
+                }
+                
+                // Move the item row to the current position
+                if (currentInsertNode) {
+                    currentInsertNode.insertAdjacentElement('afterend', row);
+                } else {
+                    tbody.insertBefore(row, tbody.firstChild);
+                }
+                currentInsertNode = row;
+            }
+        });
+    }
+    
     // Attach event listeners to all calculation inputs
     document.querySelectorAll('.rab-calc').forEach(input => {
         input.addEventListener('input', calculateRabTotals);
@@ -482,6 +589,9 @@ function renderRabRincianTable(savedMap = {}) {
     
     // Initial calculation if there are saved values
     calculateRabTotals();
+
+    // Enable Drag and Drop
+    makeRabRowsDraggable();
 }
 
 function calculateRabTotals() {
@@ -560,15 +670,15 @@ window.saveRabRincian = async function() {
             const entry = {
                 index: rowIndex,
                 catatan: catatanInput ? catatanInput.value : '',
+                uraian: uraianInput ? uraianInput.value : '',
                 v1: row.querySelector('[data-field="v1"]').value,
                 sat1: row.querySelector('[data-field="sat1"]').value,
                 v2: row.querySelector('[data-field="v2"]').value,
                 sat2: row.querySelector('[data-field="sat2"]').value,
                 price: row.querySelector('[data-field="price"]').value.replace(/[^0-9]/g, '')
             };
-            // If custom row, save group info + uraian
+            // If custom row, save group info
             if (rowIndex.startsWith('custom_')) {
-                entry.uraian = uraianInput ? uraianInput.value : '';
                 const groupId = row.getAttribute('data-group') || '';
                 entry._groupId = groupId;
                 // Extract itemId from cIdx: custom_<groupId>_<itemId>
@@ -583,6 +693,13 @@ window.saveRabRincian = async function() {
             }
             dataToSave.push(entry);
         });
+        
+        // Save deleted Excel indices so they don't reappear
+        if (window.deletedExcelIndices && window.deletedExcelIndices.length > 0) {
+            window.deletedExcelIndices.forEach(idx => {
+                dataToSave.push({ index: idx, _isDeleted: true });
+            });
+        }
 
         const grandTotalText = document.getElementById('rabRincianTotalKeseluruhan').innerText.replace(/[^0-9]/g, '');
         const grandTotal = parseFloat(grandTotalText) || 0;
@@ -633,6 +750,9 @@ function buildCustomGroupsFromSaved(savedMap) {
         if (k.startsWith('custom_')) {
             const item = savedMap[k];
             const gId = item._groupId || 'default';
+            // Skip custom items that belong to Excel groups; they are handled in renderRabRincianTable
+            if (gId.startsWith('excel_')) return;
+            
             if (!groups[gId]) {
                 groups[gId] = { groupId: gId, name: item._groupName || '', items: [] };
                 groupOrder.push(gId);
@@ -776,6 +896,16 @@ window.toggleCatatan = function(btn, index) {
 window.hapusCustomUraian = function(btn) {
     const row = btn.closest('tr.rab-input-row');
     if (!row) return;
+    
+    if(!confirm("Yakin ingin menghapus uraian ini?")) return;
+    
+    const index = row.getAttribute('data-index');
+    if (index && !index.startsWith('custom_')) {
+        // Track deleted Excel items
+        if (!window.deletedExcelIndices) window.deletedExcelIndices = [];
+        window.deletedExcelIndices.push(index);
+    }
+    
     const groupId = row.getAttribute('data-group');
     row.remove();
 
@@ -1476,4 +1606,115 @@ async function hapusSsBidang(e, id) {
     } else {
         alert("Gagal: " + result.message);
     }
+}
+
+
+window.makeRabRowsDraggable = function() {
+    const tbody = document.getElementById('rabRincianTableBody');
+    if (!tbody) return;
+
+    let draggedRow = null;
+
+    tbody.querySelectorAll('tr[data-custom-group], tr[data-excel-group]').forEach(row => {
+        const handle = row.querySelector('.drag-handle');
+        if (handle) {
+            handle.addEventListener('mousedown', () => row.setAttribute('draggable', 'true'));
+            handle.addEventListener('mouseup', () => row.removeAttribute('draggable'));
+            handle.addEventListener('mouseleave', () => row.removeAttribute('draggable'));
+        }
+        
+        row.addEventListener('dragstart', function(e) {
+            draggedRow = this;
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', this.innerHTML);
+            this.style.opacity = '0.4';
+            
+            // Also fade children while dragging
+            const groupId = this.getAttribute('data-custom-group') || this.getAttribute('data-excel-group');
+            tbody.querySelectorAll(`tr.rab-input-row[data-group="${groupId}"]`).forEach(child => {
+                child.style.opacity = '0.4';
+            });
+        });
+
+        row.addEventListener('dragend', function(e) {
+            this.style.opacity = '1';
+            this.removeAttribute('draggable');
+            
+            // Restore children opacity
+            const groupId = this.getAttribute('data-custom-group') || this.getAttribute('data-excel-group');
+            tbody.querySelectorAll(`tr.rab-input-row[data-group="${groupId}"]`).forEach(child => {
+                child.style.opacity = '1';
+            });
+            
+            tbody.querySelectorAll('tr[data-custom-group], tr[data-excel-group]').forEach(r => {
+                r.style.borderTop = '';
+                r.style.borderBottom = '';
+            });
+        });
+
+        row.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            
+            const rect = this.getBoundingClientRect();
+            const relY = e.clientY - rect.top;
+            if (relY < rect.height / 2) {
+                this.style.borderTop = '2px solid var(--primary)';
+                this.style.borderBottom = '';
+            } else {
+                this.style.borderBottom = '2px solid var(--primary)';
+                this.style.borderTop = '';
+            }
+            return false;
+        });
+
+        row.addEventListener('dragleave', function(e) {
+            this.style.borderTop = '';
+            this.style.borderBottom = '';
+        });
+
+        row.addEventListener('drop', function(e) {
+            e.stopPropagation();
+            this.style.borderTop = '';
+            this.style.borderBottom = '';
+            
+            if (draggedRow !== this) {
+                const rect = this.getBoundingClientRect();
+                const relY = e.clientY - rect.top;
+                
+                // Determine drop location
+                let targetDropNode = this;
+                let insertMode = 'before';
+                
+                if (relY >= rect.height / 2) {
+                    // Drop AFTER this group
+                    // This means we must drop it AFTER the LAST child item of this group
+                    const targetGroupId = this.getAttribute('data-custom-group') || this.getAttribute('data-excel-group');
+                    const targetChildren = Array.from(tbody.querySelectorAll(`tr.rab-input-row[data-group="${targetGroupId}"]`));
+                    if (targetChildren.length > 0) {
+                        targetDropNode = targetChildren[targetChildren.length - 1];
+                    }
+                    insertMode = 'after';
+                }
+                
+                // 1. Move the dragged Header
+                if (insertMode === 'before') {
+                    targetDropNode.parentNode.insertBefore(draggedRow, targetDropNode);
+                } else {
+                    targetDropNode.insertAdjacentElement('afterend', draggedRow);
+                }
+                
+                // 2. Move all children of the dragged Header to immediately follow the Header
+                const draggedGroupId = draggedRow.getAttribute('data-custom-group') || draggedRow.getAttribute('data-excel-group');
+                const draggedChildren = Array.from(tbody.querySelectorAll(`tr.rab-input-row[data-group="${draggedGroupId}"]`));
+                let insertAfterNode = draggedRow;
+                
+                draggedChildren.forEach(child => {
+                    insertAfterNode.insertAdjacentElement('afterend', child);
+                    insertAfterNode = child;
+                });
+            }
+            return false;
+        });
+    });
 }

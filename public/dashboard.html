@@ -78,6 +78,28 @@
               <span>RAB</span>
             </a>
           </li>
+          <li class="sidebar-dropdown">
+            <a href="#" class="sidebar-link sidebar-dropdown-toggle" id="rakDropdownToggle">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+                <line x1="10" y1="14" x2="14" y2="14"></line>
+                <line x1="10" y1="18" x2="14" y2="18"></line>
+              </svg>
+              <span>RAK Kegiatan</span>
+              <svg class="dropdown-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left: auto; transition: transform 0.3s;"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </a>
+            <ul class="sidebar-submenu" id="rakSubmenu">
+              <li>
+                <a href="#" class="sidebar-link" data-page="rak-kegiatan">Alokasi Bulanan</a>
+              </li>
+              <li>
+                <a href="#" class="sidebar-link" data-page="rak-kalender">Kalender Kegiatan</a>
+              </li>
+            </ul>
+          </li>
 
           <li>
             <a href="#" class="sidebar-link" data-page="daftar-hadir">
@@ -230,6 +252,26 @@
           <h2 class="page-title" id="pageTitle">Dashboard</h2>
         </div>
         <div class="nav-user">
+          <!-- Notification Bell for RAK -->
+          <div class="notification-container" style="position: relative; margin-right: 16px; cursor: pointer; display: flex; align-items: center;" onclick="toggleRakNotification(event)">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #475569; transition: color 0.2s;" onmouseover="this.style.color='#0f172a'" onmouseout="this.style.color='#475569'"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+            <span id="rakNotifBadge" style="position: absolute; top: -6px; right: -6px; background: #ef4444; color: white; font-size: 10px; font-weight: bold; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px white; display: none;">!</span>
+            
+            <!-- Notification Dropdown -->
+            <div id="rakNotifDropdown" style="display: none; position: absolute; top: 40px; right: -20px; width: 360px; background: white; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1); z-index: 1000; overflow: hidden; cursor: default; animation: slideUp 0.2s ease-out;" onclick="event.stopPropagation()">
+              <div style="padding: 16px; background: linear-gradient(135deg, #f8fafc, #f1f5f9); border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0; font-size: 0.95rem; color: #1e293b; font-weight: 700;">📅 Kegiatan Bulan Ini</h3>
+                <span id="rakNotifMonthLabel" style="font-size: 0.75rem; background: #dbeafe; color: #1d4ed8; padding: 4px 10px; border-radius: 20px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;">...</span>
+              </div>
+              <div id="rakNotifContent" style="max-height: 320px; overflow-y: auto; padding: 0;">
+                <div style="text-align: center; color: #94a3b8; padding: 40px 20px;">Memuat data...</div>
+              </div>
+              <div style="padding: 12px; background: white; border-top: 1px solid #e2e8f0; text-align: center;">
+                <a href="#" onclick="event.preventDefault(); document.getElementById('rakNotifDropdown').style.display='none'; navigateTo('rak-kalender');" style="color: #3b82f6; font-size: 0.85rem; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; border-radius: 6px; transition: background 0.2s;" onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background='transparent'">Lihat Kalender Lengkap &rarr;</a>
+              </div>
+            </div>
+          </div>
+
           <div class="nav-user-info">
             <div class="user-name" id="navUsername">-</div>
           </div>
@@ -2160,6 +2202,99 @@
           </div>
         </div>
 
+        <!-- ═══════════════ PAGE: RAK KEGIATAN ═══════════════ -->
+        <div class="page-section" id="page-rak-kegiatan">
+          <div class="page-header-section" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+            <div>
+              <h1>📅 RAK Kegiatan</h1>
+              <p>Rencana Anggaran Kas — Alokasi Kegiatan per Bulan</p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+              <div style="display: flex; align-items: center; gap: 8px; background: white; padding: 8px 16px; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: var(--shadow-sm);">
+                <label for="rakTahunSelector" style="font-weight: 600; color: var(--text-dark); margin: 0; white-space: nowrap;">Tahun Anggaran:</label>
+                <select id="rakTahunSelector" class="form-input" style="width: 100px; font-weight: bold; padding: 6px 12px; margin: 0; min-height: unset;">
+                  <!-- Diisi oleh JS -->
+                </select>
+              </div>
+              <button class="btn-save" id="btnSaveRak" onclick="saveRakKegiatan()" style="display:flex; align-items:center; gap:6px; padding:8px 20px; font-size:0.9rem;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                  <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                  <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+                Simpan RAK
+              </button>
+            </div>
+          </div>
+
+          <!-- RAK Legend -->
+          <div style="background: white; padding: 16px 20px; border-radius: 10px; border: 1px solid #e2e8f0; margin-bottom: 16px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; box-shadow: var(--shadow-sm);">
+            <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">Keterangan:</span>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <div style="width: 22px; height: 22px; background: #dbeafe; border: 2px solid #3b82f6; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #3b82f6;">✓</div>
+              <span style="font-size: 0.82rem; color: var(--text-dark);">Bulan Terpilih</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <div style="width: 22px; height: 22px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 4px;"></div>
+              <span style="font-size: 0.82rem; color: var(--text-dark);">Bulan Belum Dipilih</span>
+          </div>
+
+          <!-- RAK Table Container -->
+          <div id="rakTableContainer" style="background: white; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: var(--shadow-sm);">
+            <div style="padding: 60px; text-align: center; color: var(--text-muted);">
+              <div style="font-size: 3rem; margin-bottom: 16px;">📅</div>
+              <p>Memuat data RAK Kegiatan...</p>
+            </div>
+          </div>
+
+          <!-- RAK Monthly Summary -->
+          <div id="rakMonthlySummary" style="margin-top: 20px; background: white; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: var(--shadow-sm); display: none;">
+            <div style="padding: 16px 20px; border-bottom: 1px solid #e2e8f0; background: linear-gradient(135deg, #eff6ff, #dbeafe);">
+              <h3 style="margin: 0; font-size: 1rem; color: #1e40af; font-weight: 700;">📊 Ringkasan Total per Bulan</h3>
+            </div>
+            <div id="rakMonthlySummaryContent" style="padding: 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px;">
+            </div>
+          </div>
+        </div>
+
+        <!-- ==========================================
+             PAGE: KALENDER KEGIATAN (RAK)
+             ========================================== -->
+        <div id="page-rak-kalender" class="page-section">
+          <div class="page-header-section" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <div>
+              <h1>📅 Kalender Kegiatan</h1>
+              <p>Tinjauan rincian kegiatan per bulan dalam satu tahun anggaran.</p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; background: white; padding: 12px 20px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: var(--shadow-sm);">
+              <label style="font-weight: 600; color: #475569; font-size: 0.9rem;">Tahun Anggaran:</label>
+              <select id="rakKalenderTahunSelector" style="padding: 8px 16px; border: 1px solid #cbd5e1; border-radius: 8px; font-weight: 700; min-width: 120px; outline: none; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05); color: #1e293b; cursor: pointer;">
+                <!-- Options populated by JS -->
+              </select>
+            </div>
+          </div>
+
+          <div id="rakKalenderGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; margin-bottom: 24px;">
+            <!-- 12 Months populated by JS -->
+          </div>
+
+          <!-- Month Details Section -->
+          <div id="rakKalenderDetailSection" style="display: none; background: white; border-radius: 16px; border: 1px solid #e2e8f0; border-top: 5px solid #3b82f6; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); margin-bottom: 40px; animation: slideUp 0.3s ease-out;">
+            <div style="padding: 24px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: flex-start; background: linear-gradient(to right, #ffffff, #f8fafc);">
+              <div>
+                <h3 id="rakKalenderDetailTitle" style="margin: 0 0 6px 0; color: #0f172a; font-size: 1.4rem; font-weight: 700;">Detail Kegiatan: Januari</h3>
+                <p id="rakKalenderDetailSubtitle" style="margin: 0; color: #64748b; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Ringkasan bulan</p>
+              </div>
+              <button onclick="document.getElementById('rakKalenderDetailSection').style.display='none'" style="background: white; border: 1px solid #cbd5e1; padding: 8px 16px; border-radius: 8px; cursor: pointer; color: #475569; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: all 0.2s; box-shadow: var(--shadow-sm);" onmouseover="this.style.background='#f1f5f9'; this.style.borderColor='#94a3b8';" onmouseout="this.style.background='white'; this.style.borderColor='#cbd5e1';">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Tutup
+              </button>
+            </div>
+            <div id="rakKalenderDetailContent" style="padding: 0;">
+              <!-- Details populated by JS -->
+            </div>
+          </div>
+        </div>
+
         <!-- ═══════════════ PAGE: PENGATURAN ═══════════════ -->
         <div class="page-section" id="page-pengaturan">
           <div class="page-header-section">
@@ -2195,14 +2330,16 @@
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://npmcdn.com/flatpickr/dist/l10n/id.js"></script>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
-  <script src="js/dashboard.js"></script>
+  <script src="js/dashboard.js?v=3"></script>
   <script src="js/sppd.js"></script>
   <script src="js/narasumber.js"></script>
-  <script src="js/rab.js?v=2"></script>
+  <script src="js/rab.js?v=9"></script>
   <script src="js/surat-ahli-waris.js"></script>
   <script src="js/daftar-hadir.js"></script>
   <script src="js/ijin-keramaian.js"></script>
   <script src="js/pengantar-nikah.js"></script>
+  <script src="js/rak-kegiatan.js?v=4"></script>
+  <script src="js/rak-kalender.js?v=2"></script>
   <script src="js/settings.js"></script>
 </body>
 </html>
